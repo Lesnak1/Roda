@@ -64,6 +64,13 @@ export const circleAbi = [
   },
   {
     type: "function",
+    name: "creator",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "address" }],
+  },
+  {
+    type: "function",
     name: "beneficiaryOf",
     stateMutability: "view",
     inputs: [{ name: "round", type: "uint256" }],
@@ -137,5 +144,19 @@ export const circleAbi = [
     stateMutability: "nonpayable",
     inputs: [],
     outputs: [],
+  },
+  {
+    type: "function",
+    name: "cancelCircle",
+    stateMutability: "nonpayable",
+    inputs: [],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "joinDeadline",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
   },
 ] as const;

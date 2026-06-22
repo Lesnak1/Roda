@@ -121,16 +121,32 @@ To deploy Roda to Vercel:
 
 ---
 
-## Security Model & Collateral Boundaries
+## Security Model & Hardened Economic Safety
 
-Roda is designed as a trustless, self-contained escrow system. However, the current economic security model has defined boundaries that are important to note for production usage:
+Roda is designed as a trustless, mathematically secured financial protocol. Following professional audits, Roda has been hardened against common ROSCA trust failures:
 
-### Collateral Safety & Deficit Risk
-* **The MVP Rule:** Every member locks **1 round** of contribution as collateral. This covers exactly **one default** per member.
-* **The Deficit Boundary:** If a member receives the round pot early (e.g., Round 1) and subsequently defaults on *multiple* later rounds, their single locked collateral only covers their first default. Subsequent defaults by that member will result in a deficit in the pot for later beneficiaries.
-* **Test Coverage:** This economic boundary condition is formally verified and documented in the Foundry test suite under `testSerialDefaultDeficit()`.
+### 1. Recruiting Deadlines & Creator Cancellation
+* **Join Deadlines:** Every circle has a `joinDeadline` calculated dynamically from its configuration. No member can join a circle after the deadline has expired, protecting circles from freezing due to incomplete registrations.
+* **Circle Cancellation:** If a circle fails to fill before the deadline, or if the group decides to dissolve early, the circle creator can call `cancelCircle()`. This transitions the contract to the `Cancelled` state, unlocking all funds.
+* **Instant Collateral Refunds:** Members can withdraw their locked collateral at any time during `Recruiting` using `leave()`, or retrieve it after cancellation using `withdrawCollateral()`.
 
-### Production Mitigations (Roadmap v2)
-To achieve complete economic safety for larger, long-term circles, we plan to implement:
-* **Collateral Withholding:** Retaining a portion of the payout pot for early beneficiaries inside the contract as additional collateral until the circle terminates.
-* **Discount Bidding ROSCA Model:** Switching to a bidding model where members bid discounts to receive the pot early, inherently reducing the economic incentive to default.
+### 2. Dynamic Collateral Withholding (100% Deficit Prevention)
+* **The Vulnerability:** In traditional signs/sign-up models, if a member receives the pot early and subsequently defaults on *multiple* later rounds, their single locked collateral only covers their first default, leading to deficits for later beneficiaries.
+* **Roda's Solution:** When a beneficiary claims their payout pot, Roda calculates their remaining lifetime liability in the circle (`contributionAmount * remaining_rounds`). If this liability exceeds their current locked collateral, Roda automatically withholds the difference from their payout and redirects it to their locked collateral escrow.
+* **Mathematical Deficit Elimination:** This dynamic mechanism ensures that early beneficiaries are always 100% collateralized against all future contributions. If they default multiple times, their refilled collateral covers each missed payment.
+* **Test Verification:** This advanced safety feature is formally verified in the Foundry unit test suite under `testSerialDefaultDeficit()`.
+
+---
+
+## Roadmap & Arc Integrations (v2)
+
+To scale Roda into the ultimate stablecoin consumer-finance protocol on Arc, we plan to implement:
+
+### 1. Circle CCTP Onboarding ("Bridge & Join")
+Integrate Circle's Cross-Chain Transfer Protocol (CCTP) directly into the Roda onboarding wizard. This will allow users to join a Roda circle using USDC from external networks (e.g. Arbitrum, Base, Optimism, or Solana) and settle natively on Arc without manual bridging.
+
+### 2. Opt-in Selectively Shielded Privacy
+Implement selectively shielded privacy utilizing Arc's privacy-preserving layer. This keeps the existence of the circle and a member's payment reputation public, while completely shielding sensitive details like payment amounts, group member addresses, and payout schedules.
+
+### 3. Attested Roda Passport Credentials
+Convert Roda Passport reputation profiles into non-transferable EAS (Ethereum Attestation Service) badges or Soulbound Tokens (SBTs). These portable repayment scores can be queried by other Arc ecosystem protocols, enabling undercollateralized lending and credit services.

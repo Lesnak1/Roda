@@ -16,6 +16,7 @@ export const CircleState = {
   Recruiting: 0,
   Active: 1,
   Completed: 2,
+  Cancelled: 3,
 } as const;
 
 export type CircleStateValue =

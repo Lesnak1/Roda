@@ -19,7 +19,8 @@ contract SavingsCircle is ReentrancyGuard {
     enum State {
         Recruiting, // collecting members
         Active, // rounds in progress
-        Completed // every member has received the pot once
+        Completed, // every member has received the pot once
+        Cancelled // cancelled before starting
     }
 
     // --- Immutable config ---
@@ -29,6 +30,7 @@ contract SavingsCircle is ReentrancyGuard {
     uint256 public immutable collateralAmount; // security deposit (== contributionAmount)
     uint8 public immutable memberCount; // total seats in the circle
     uint256 public immutable roundDuration; // seconds per round
+    uint256 public immutable joinDeadline; // timestamp when circle recruiting ends
 
     // --- Mutable state ---
     State public state;
@@ -53,6 +55,8 @@ contract SavingsCircle is ReentrancyGuard {
     event RoundClosed(uint256 indexed round, address indexed beneficiary, uint256 pot);
     event PayoutClaimed(uint256 indexed round, address indexed beneficiary, uint256 amount);
     event CircleCompleted(uint256 endTime);
+    event CircleCancelled(uint256 timestamp);
+    event CollateralWithheld(address indexed member, uint256 amount);
     event CollateralWithdrawn(address indexed member, uint256 amount);
 
     // --- Errors ---
@@ -69,6 +73,8 @@ contract SavingsCircle is ReentrancyGuard {
     error AlreadyClaimed();
     error NotCompleted();
     error NothingToWithdraw();
+    error JoinDeadlinePassed();
+    error NotCreator();
 
     constructor(
         address _usdc,
@@ -89,6 +95,7 @@ contract SavingsCircle is ReentrancyGuard {
         memberCount = _memberCount;
         roundDuration = _roundDuration;
         state = State.Recruiting;
+        joinDeadline = block.timestamp + (_roundDuration >= 1 days ? 7 days : (_roundDuration * _memberCount));
     }
 
     // --- Views ---
@@ -115,6 +122,7 @@ contract SavingsCircle is ReentrancyGuard {
     ///         Requires prior USDC approve() for collateralAmount.
     function join() external nonReentrant {
         if (state != State.Recruiting) revert NotRecruiting();
+        if (block.timestamp > joinDeadline) revert JoinDeadlinePassed();
         if (isMember[msg.sender]) revert AlreadyMember();
         if (members.length >= memberCount) revert CircleFull();
 
@@ -161,6 +169,16 @@ contract SavingsCircle is ReentrancyGuard {
             usdc.safeTransfer(msg.sender, amount);
         }
         emit CollateralWithdrawn(msg.sender, amount);
+    }
+
+    // --- Step: cancelCircle (Recruiting) ---
+    /// @notice Cancel the circle before it starts. Creator only.
+    function cancelCircle() external nonReentrant {
+        if (state != State.Recruiting) revert NotRecruiting();
+        if (msg.sender != creator) revert NotCreator();
+
+        state = State.Cancelled;
+        emit CircleCancelled(block.timestamp);
     }
 
     // --- Step: contribute (Active) ---
@@ -229,14 +247,29 @@ contract SavingsCircle is ReentrancyGuard {
 
         payoutClaimed[round] = true;
         uint256 amount = roundPot[round];
+
+        // Dynamic collateral withholding to cover remaining round liabilities
+        uint256 remRounds = memberCount - 1 - round;
+        uint256 liability = contributionAmount * remRounds;
+        uint256 currCollateral = collateral[msg.sender];
+        if (liability > currCollateral) {
+            uint256 withholdAmount = liability - currCollateral;
+            if (withholdAmount > amount) {
+                withholdAmount = amount;
+            }
+            collateral[msg.sender] = currCollateral + withholdAmount;
+            amount -= withholdAmount;
+            emit CollateralWithheld(msg.sender, withholdAmount);
+        }
+
         usdc.safeTransfer(msg.sender, amount);
         emit PayoutClaimed(round, msg.sender, amount);
     }
 
-    // --- Step: withdraw collateral (Completed) ---
-    /// @notice After the circle completes, members reclaim any remaining collateral.
+    // --- Step: withdraw collateral (Completed or Cancelled) ---
+    /// @notice After the circle completes (or is cancelled), members reclaim any remaining collateral.
     function withdrawCollateral() external nonReentrant {
-        if (state != State.Completed) revert NotCompleted();
+        if (state != State.Completed && state != State.Cancelled) revert NotCompleted();
         if (!isMember[msg.sender]) revert NotMember();
         if (collateralWithdrawn[msg.sender]) revert NothingToWithdraw();
 

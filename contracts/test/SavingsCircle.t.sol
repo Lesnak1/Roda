@@ -81,7 +81,9 @@ contract SavingsCircleTest is Test {
         uint256 before = usdc.balanceOf(alice);
         vm.prank(alice);
         c.claimPayout(0);
-        assertEq(usdc.balanceOf(alice) - before, CONTRIBUTION * MEMBERS);
+        // Alice gets pot minus dynamic collateral withholding (300 - 100 = 200 USDC)
+        assertEq(usdc.balanceOf(alice) - before, CONTRIBUTION * (MEMBERS - 1));
+        assertEq(c.collateral(alice), CONTRIBUTION * 2);
     }
 
     function testCannotClaimIfNotBeneficiary() public {
@@ -139,7 +141,9 @@ contract SavingsCircleTest is Test {
         uint256 before = usdc.balanceOf(alice);
         vm.prank(alice);
         c.claimPayout(0);
-        assertEq(usdc.balanceOf(alice) - before, CONTRIBUTION * MEMBERS);
+        // Alice gets pot minus dynamic collateral withholding (300 - 100 = 200 USDC)
+        assertEq(usdc.balanceOf(alice) - before, CONTRIBUTION * (MEMBERS - 1));
+        assertEq(c.collateral(alice), CONTRIBUTION * 2);
     }
 
     function testCompleteCircleAndWithdrawCollateral() public {
@@ -219,18 +223,62 @@ contract SavingsCircleTest is Test {
         c.closeRound(); // Bob's collateral is consumed to cover Round 1 pot.
         
         assertEq(c.collateral(bob), 0);
+        uint256 beforeBob = usdc.balanceOf(bob);
         vm.prank(bob);
-        c.claimPayout(1); // Bob gets the full pot because his collateral covered his default.
+        c.claimPayout(1); // Bob gets pot, but since liability (100) > collateral (0), 100 is withheld.
+        assertEq(usdc.balanceOf(bob) - beforeBob, CONTRIBUTION * 2); // gets 200 instead of 300
 
-        // Round 2: Bob defaults again. No collateral left!
+        // Bob's collateral is refilled to 100 USDC to cover his remaining liability
+        assertEq(c.collateral(bob), CONTRIBUTION);
+
+        // Round 2: Bob defaults again. Refilled collateral covers the deficit!
         _contribute(c, alice);
         // Bob defaults again
         _contribute(c, carol);
         
         vm.warp(block.timestamp + DURATION * 2 + 1);
-        c.closeRound(); // Bob defaults again, but collateral is 0.
+        c.closeRound(); // Bob defaults again, but collateral is consumed to cover it.
 
-        // The round pot is short! It has only alice + carol contributions.
-        assertEq(c.roundPot(2), CONTRIBUTION * 2);
+        // The round pot is fully funded!
+        assertEq(c.roundPot(2), CONTRIBUTION * MEMBERS);
+    }
+
+    function testCancelCircleByCreator() public {
+        SavingsCircle c = _newCircle();
+        
+        _join(c, alice);
+        _join(c, bob);
+        
+        // Non-creator cannot cancel
+        vm.prank(bob);
+        vm.expectRevert(SavingsCircle.NotCreator.selector);
+        c.cancelCircle();
+        
+        // Creator can cancel
+        c.cancelCircle();
+        
+        assertEq(uint8(c.state()), uint8(SavingsCircle.State.Cancelled));
+        
+        // Members can withdraw collateral after cancellation
+        uint256 beforeAlice = usdc.balanceOf(alice);
+        vm.prank(alice);
+        c.withdrawCollateral();
+        assertEq(usdc.balanceOf(alice) - beforeAlice, CONTRIBUTION);
+    }
+
+    function testJoinDeadlinePassed() public {
+        SavingsCircle c = _newCircle();
+        
+        _join(c, alice);
+        
+        // Warp past join deadline (7 days for DURATION = 1 days)
+        vm.warp(block.timestamp + 8 days);
+        
+        // Join reverts
+        vm.startPrank(bob);
+        usdc.approve(address(c), type(uint256).max);
+        vm.expectRevert(SavingsCircle.JoinDeadlinePassed.selector);
+        c.join();
+        vm.stopPrank();
     }
 }

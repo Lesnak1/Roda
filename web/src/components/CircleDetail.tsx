@@ -60,6 +60,8 @@ export function CircleDetail({
       { ...baseRead, functionName: "currentRound" },
       { ...baseRead, functionName: "roundDeadline" },
       { ...baseRead, functionName: "memberList" },
+      { ...baseRead, functionName: "creator" },
+      { ...baseRead, functionName: "joinDeadline" },
     ],
   });
 
@@ -71,8 +73,11 @@ export function CircleDetail({
   const currentRound = Number(data?.[5]?.result ?? 0);
   const roundDeadline = Number(data?.[6]?.result ?? 0);
   const members = (data?.[7]?.result as `0x${string}`[]) ?? [];
-
+  const creator = (data?.[8]?.result as `0x${string}`) ?? undefined;
+  const joinDeadline = Number(data?.[9]?.result ?? 0);
+ 
   const isMember = account ? members.map((m) => m.toLowerCase()).includes(account.toLowerCase()) : false;
+  const isCreator = account && creator ? account.toLowerCase() === creator.toLowerCase() : false;
   const pot = contribution * BigInt(memberCount);
 
   const { data: roundData, refetch: refetchRound } = useReadContracts({
@@ -116,7 +121,7 @@ export function CircleDetail({
       { onSuccess: onTx }
     );
   }
-  function call(functionName: "join" | "contribute" | "closeRound" | "withdrawCollateral" | "leave") {
+  function call(functionName: "join" | "contribute" | "closeRound" | "withdrawCollateral" | "leave" | "cancelCircle") {
     reset();
     writeContract({ ...baseRead, functionName }, { onSuccess: onTx });
   }
@@ -133,6 +138,7 @@ export function CircleDetail({
   const stateBadge = useMemo(() => {
     if (state === CircleState.Recruiting) return <span className="badge blue">Recruiting</span>;
     if (state === CircleState.Active) return <span className="badge green"><span className="live-dot" /> Active</span>;
+    if (state === CircleState.Cancelled) return <span className="badge red">Cancelled</span>;
     return <span className="badge gray">Completed</span>;
   }, [state]);
 
@@ -200,6 +206,12 @@ export function CircleDetail({
               <div className="v mono" style={{ color: "var(--accent)" }}>{fmtCountdown(roundDeadline)}</div>
             </div>
           )}
+          {state === CircleState.Recruiting && (
+            <div className="stat">
+              <div className="k">Deadline to join</div>
+              <div className="v mono" style={{ color: "var(--accent)" }}>{fmtCountdown(joinDeadline)}</div>
+            </div>
+          )}
         </div>
 
         <AnimatePresence mode="wait">
@@ -210,31 +222,70 @@ export function CircleDetail({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
               className="row"
-              style={sActions}
+              style={{ ...sActions, flexDirection: "column", alignItems: "stretch" }}
             >
-              {isMember ? (
-                <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%" }}>
-                  <div className="alert ok" style={{ width: "100%" }}>
-                    <CheckCircle size={16} className="ai" />
-                    <span>You have joined this circle. Waiting for other members to fill the remaining seats...</span>
+              <div style={{ display: "flex", gap: 12, width: "100%", flexWrap: "wrap" }}>
+                {isMember ? (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%" }}>
+                    <div className="alert ok" style={{ width: "100%" }}>
+                      <CheckCircle size={16} className="ai" />
+                      <span>You have joined this circle. Waiting for other members to fill the remaining seats...</span>
+                    </div>
+                    <button
+                      className="btn ghost sm"
+                      disabled={busy}
+                      onClick={() => call("leave")}
+                      style={{ display: "inline-flex", alignItems: "center", gap: 6, alignSelf: "flex-start" }}
+                    >
+                      {busy && <span className="btn-spin" />}
+                      Leave Circle & Refund Collateral
+                    </button>
                   </div>
-                  <button
-                    className="btn ghost sm"
-                    disabled={busy}
-                    onClick={() => call("leave")}
-                    style={{ display: "inline-flex", alignItems: "center", gap: 6, alignSelf: "flex-start" }}
-                  >
-                    {busy && <span className="btn-spin" />}
-                    Leave Circle & Refund Collateral
+                ) : needApproveForJoin ? (
+                  <button className="btn" disabled={busy} onClick={() => approve(collateral)}>
+                    {busy && <span className="btn-spin" />}1) Approve USDC ({formatUsdc(collateral)})
                   </button>
-                </div>
-              ) : needApproveForJoin ? (
-                <button className="btn" disabled={busy} onClick={() => approve(collateral)}>
-                  {busy && <span className="btn-spin" />}1) Approve USDC ({formatUsdc(collateral)})
+                ) : (
+                  <button className="btn success" disabled={busy} onClick={() => call("join")}>
+                    {busy && <span className="btn-spin" />}2) Join Circle
+                  </button>
+                )}
+              </div>
+              {isCreator && (
+                <button
+                  className="btn danger ghost sm"
+                  disabled={busy}
+                  onClick={() => call("cancelCircle")}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, alignSelf: "flex-start", marginTop: 12 }}
+                >
+                  Cancel Circle (Creator)
                 </button>
-              ) : (
-                <button className="btn success" disabled={busy} onClick={() => call("join")}>
-                  {busy && <span className="btn-spin" />}2) Join Circle
+              )}
+            </motion.div>
+          )}
+
+          {state === CircleState.Cancelled && (
+            <motion.div
+              key="cancelled"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="row"
+              style={{ ...sActions, flexDirection: "column", alignItems: "stretch" }}
+            >
+              <div className="alert warn" style={{ width: "100%" }}>
+                <AlertTriangle size={16} className="ai" />
+                <span>This savings circle has been cancelled by its creator.</span>
+              </div>
+              {isMember && (
+                <button
+                  className="btn success sm"
+                  disabled={busy}
+                  onClick={() => call("withdrawCollateral")}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, alignSelf: "flex-start", marginTop: 12 }}
+                >
+                  {busy && <span className="btn-spin" />}
+                  Withdraw My Collateral ({formatUsdc(collateral)} USDC)
                 </button>
               )}
             </motion.div>
