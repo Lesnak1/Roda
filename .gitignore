@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Builds
+.next/
+out/
+build/
+dist/
+
+# Foundry
+contracts/out/
+contracts/cache/
+contracts/lib/
+broadcast/
+
+# Env & secrets — NEVER commit private keys
+.env
+.env.local
+.env.*.local
+*.key
+
+# Misc
+.DS_Store
+*.log
+npm-debug.log*
+.vercel
+*.tsbuildinfo
+next-env.d.ts.bak
