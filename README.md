@@ -52,7 +52,7 @@ roda/
 ├─ contracts/                      Foundry project (Solidity 0.8.28)
 │  ├─ src/SavingsCircle.sol        Core circle: join → contribute → closeRound → claimPayout → withdrawCollateral
 │  ├─ src/CircleFactory.sol        Deploys and indexes circles for public discovery
-│  ├─ test/SavingsCircle.t.sol     Comprehensive 12-test unit suite (100% pass)
+│  ├─ test/SavingsCircle.t.sol     Comprehensive 13-test unit suite (100% pass)
 │  ├─ script/Deploy.s.sol          Deploys CircleFactory to Arc Testnet
 │  └─ foundry.toml & remappings.txt
 ├─ web/                            Next.js (App Router) + Wagmi v2 + Viem dApp
@@ -62,7 +62,6 @@ roda/
 │  └─ package.json & next.config.mjs
 └─ README.md
 ```
-
 ---
 
 ## Arc Decimal Contexts (Crucial)
@@ -153,10 +152,10 @@ Roda is designed as a trustless, mathematically secured financial protocol. Foll
 * **Instant Collateral Refunds:** Members can withdraw their locked collateral at any time during `Recruiting` using `leave()`, or retrieve it after cancellation using `withdrawCollateral()`.
 
 ### 2. Dynamic Collateral Withholding (100% Deficit Prevention)
-* **The Vulnerability:** In traditional signs/sign-up models, if a member receives the pot early and subsequently defaults on *multiple* later rounds, their single locked collateral only covers their first default, leading to deficits for later beneficiaries.
-* **Roda's Solution:** When a beneficiary claims their payout pot, Roda calculates their remaining lifetime liability in the circle (`contributionAmount * remaining_rounds`). If this liability exceeds their current locked collateral, Roda automatically withholds the difference from their payout and redirects it to their locked collateral escrow.
-* **Mathematical Deficit Elimination:** This dynamic mechanism ensures that early beneficiaries are always 100% collateralized against all future contributions. If they default multiple times, their refilled collateral covers each missed payment.
-* **Test Verification:** This advanced safety feature is formally verified in the Foundry unit test suite under `testSerialDefaultDeficit()`.
+* **The Vulnerability:** In traditional ROSCA models, if a member receives the pot early and subsequently defaults on *multiple* later rounds, their single locked collateral only covers their first default, leading to deficits for subsequent beneficiaries. Additionally, if withholding is only performed when claiming the payout, an adversarial beneficiary could delay claiming their payout while defaulting on rounds, avoiding the withholding mechanism.
+* **Roda's Solution:** During the **close-time settlement (`closeRound()`)**, Roda calculates the beneficiary's remaining lifetime liability in the circle (`contributionAmount * remaining_rounds`). If this liability exceeds their current locked collateral, Roda automatically withholds the difference directly from the gross round pot and immediately refills their locked collateral escrow.
+* **Mathematical Deficit Elimination:** This close-time dynamic withholding guarantees that early beneficiaries are always 100% collateralized against all future contributions, regardless of when they choose to pull/claim their payout. If they default multiple times, their refilled collateral successfully covers each missed payment.
+* **Test Verification:** This advanced safety feature and its defense against delayed-claim withholding avoidance are formally verified in the Foundry unit test suite under `testSerialDefaultDeficit()` and `testBeneficiaryCannotAvoidWithholdingByDelayingClaim()`.
 
 ---
 

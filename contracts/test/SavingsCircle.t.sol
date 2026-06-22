@@ -220,16 +220,15 @@ contract SavingsCircleTest is Test {
         _contribute(c, carol);
         
         vm.warp(block.timestamp + DURATION + 1);
-        c.closeRound(); // Bob's collateral is consumed to cover Round 1 pot.
+        c.closeRound(); // Bob's collateral is consumed to cover Round 1 pot, and then refilled due to close-time withholding.
         
-        assertEq(c.collateral(bob), 0);
+        // Bob's collateral is refilled to 100 USDC during closeRound() to cover his remaining liability
+        assertEq(c.collateral(bob), CONTRIBUTION);
+
         uint256 beforeBob = usdc.balanceOf(bob);
         vm.prank(bob);
-        c.claimPayout(1); // Bob gets pot, but since liability (100) > collateral (0), 100 is withheld.
-        assertEq(usdc.balanceOf(bob) - beforeBob, CONTRIBUTION * 2); // gets 200 instead of 300
-
-        // Bob's collateral is refilled to 100 USDC to cover his remaining liability
-        assertEq(c.collateral(bob), CONTRIBUTION);
+        c.claimPayout(1); // Bob claims payout, receiving gross pot (300) minus withheld amount (100) = 200.
+        assertEq(usdc.balanceOf(bob) - beforeBob, CONTRIBUTION * 2);
 
         // Round 2: Bob defaults again. Refilled collateral covers the deficit!
         _contribute(c, alice);
@@ -282,5 +281,53 @@ contract SavingsCircleTest is Test {
         vm.expectRevert(SavingsCircle.JoinDeadlinePassed.selector);
         c.join();
         vm.stopPrank();
+    }
+
+    function testBeneficiaryCannotAvoidWithholdingByDelayingClaim() public {
+        SavingsCircle c = _newCircle();
+        _join(c, alice);
+        _join(c, bob);
+        _join(c, carol);
+
+        // Round 0: Everyone contributes. Alice is beneficiary.
+        _contribute(c, alice);
+        _contribute(c, bob);
+        _contribute(c, carol);
+
+        // Close round 0.
+        // During closeRound(), Alice's collateral is updated.
+        // Alice has NOT claimed yet.
+        c.closeRound();
+
+        assertEq(c.collateral(alice), CONTRIBUTION * 2);
+        assertEq(c.claimablePayout(0), CONTRIBUTION * 2);
+        assertEq(c.withheldFromPayout(0), CONTRIBUTION);
+        assertFalse(c.payoutClaimed(0));
+
+        // Round 1 starts. Bob is beneficiary.
+        // Alice defaults in Round 1. Bob and Carol contribute.
+        _contribute(c, bob);
+        _contribute(c, carol);
+
+        // Warp past deadline to close Round 1.
+        vm.warp(block.timestamp + DURATION + 1);
+
+        // Closing Round 1 consumes Alice's collateral since she defaulted.
+        // Her collateral was 200, so it is decreased by 100 to cover her default.
+        c.closeRound();
+
+        // Alice's collateral is now 100.
+        assertEq(c.collateral(alice), CONTRIBUTION);
+        // The pot for Round 1 was successfully covered.
+        assertEq(c.roundPot(1), CONTRIBUTION * MEMBERS);
+
+        // Alice claims her Round 0 payout now.
+        uint256 beforeAlice = usdc.balanceOf(alice);
+        vm.prank(alice);
+        c.claimPayout(0);
+        
+        // Alice receives the exact pre-calculated claimablePayout[0] (200 USDC).
+        assertEq(usdc.balanceOf(alice) - beforeAlice, CONTRIBUTION * 2);
+        assertTrue(c.payoutClaimed(0));
     }
 }

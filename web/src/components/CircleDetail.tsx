@@ -95,20 +95,42 @@ export function CircleDetail({
   const payoutClaimed = Boolean(roundData?.[3]?.result);
   const isBeneficiary = account && beneficiary ? account.toLowerCase() === beneficiary.toLowerCase() : false;
 
-  const claimBreakdown = useMemo(() => {
-    if (state !== CircleState.Active || !isBeneficiary || !roundClosed || payoutClaimed) return null;
-    const remRounds = memberCount - 1 - currentRound;
-    const liability = contribution * BigInt(remRounds);
-    const withholdAmount = liability > collateral ? liability - collateral : 0n;
-    const finalWithhold = withholdAmount > pot ? pot : withholdAmount;
-    const netPayout = pot - finalWithhold;
-    return {
-      remRounds,
-      liability,
-      withholdAmount: finalWithhold,
-      netPayout,
-    };
-  }, [state, isBeneficiary, roundClosed, payoutClaimed, memberCount, currentRound, contribution, collateral, pot]);
+  const roundQueries = useMemo(() => {
+    if (!members || members.length === 0) return [];
+    return members.flatMap((_, i) => [
+      { ...baseRead, functionName: "roundClosed", args: [BigInt(i)] },
+      { ...baseRead, functionName: "payoutClaimed", args: [BigInt(i)] },
+      { ...baseRead, functionName: "claimablePayout", args: [BigInt(i)] },
+      { ...baseRead, functionName: "withheldFromPayout", args: [BigInt(i)] },
+    ]);
+  }, [members, address]);
+
+  const { data: allRoundsData, refetch: refetchAllRounds } = useReadContracts({
+    contracts: roundQueries,
+    query: { enabled: members.length > 0 },
+  });
+
+  const unclaimedRounds = useMemo(() => {
+    if (!account || !members || !allRoundsData) return [];
+    const list = [];
+    for (let i = 0; i < members.length; i++) {
+      const beneficiaryAddress = members[i];
+      if (beneficiaryAddress.toLowerCase() !== account.toLowerCase()) continue;
+      
+      const closed = Boolean(allRoundsData[i * 4]?.result);
+      const claimed = Boolean(allRoundsData[i * 4 + 1]?.result);
+      if (closed && !claimed) {
+        const netPayout = (allRoundsData[i * 4 + 2]?.result as bigint) ?? 0n;
+        const withheld = (allRoundsData[i * 4 + 3]?.result as bigint) ?? 0n;
+        list.push({
+          roundIndex: i,
+          netPayout,
+          withheld,
+        });
+      }
+    }
+    return list;
+  }, [account, members, allRoundsData]);
 
   const { data: allowance, refetch: refetchAllowance } = useReadContract({
     address: USDC_ADDRESS,
@@ -125,6 +147,7 @@ export function CircleDetail({
     refetch();
     refetchRound();
     refetchAllowance();
+    refetchAllRounds();
   }
   function onTx() {
     setTimeout(refreshAll, 2500);
@@ -341,37 +364,6 @@ export function CircleDetail({
               <button className="btn ghost" disabled={busy} onClick={() => call("closeRound")}>
                 Close Round
               </button>
-              {isBeneficiary && roundClosed && !payoutClaimed && claimBreakdown && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", marginTop: 12 }}>
-                  <div style={breakdownBox}>
-                    <h4 style={{ margin: "0 0 8px", fontSize: "14px", fontWeight: 700 }}>Claim Payout Breakdown</h4>
-                    <div style={breakdownRow}>
-                      <span style={breakdownLabel}>Gross Pot ({memberCount} members)</span>
-                      <span className="mono" style={breakdownVal}>{formatUsdc(pot)} USDC</span>
-                    </div>
-                    <div style={breakdownRow}>
-                      <span style={breakdownLabel}>Future Liability ({claimBreakdown.remRounds} rounds)</span>
-                      <span className="mono" style={breakdownVal}>{formatUsdc(claimBreakdown.liability)} USDC</span>
-                    </div>
-                    <div style={breakdownRow}>
-                      <span style={breakdownLabel}>Current Collateral Locked</span>
-                      <span className="mono" style={breakdownVal}>{formatUsdc(collateral)} USDC</span>
-                    </div>
-                    <div style={{ ...breakdownRow, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 6, color: "#3b82f6" }}>
-                      <span style={{ ...breakdownLabel, fontWeight: 700 }}>Retained to Collateral</span>
-                      <span className="mono" style={{ ...breakdownVal, fontWeight: 700 }}>+{formatUsdc(claimBreakdown.withholdAmount)} USDC</span>
-                    </div>
-                    <div style={{ ...breakdownRow, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 6, color: "#10b981" }}>
-                      <span style={{ ...breakdownLabel, fontWeight: 800 }}>Net Payout to Wallet</span>
-                      <span className="mono" style={{ ...breakdownVal, fontWeight: 800 }}>{formatUsdc(claimBreakdown.netPayout)} USDC</span>
-                    </div>
-                  </div>
-                  <button className="btn success" disabled={busy} onClick={() => claim(currentRound)} style={{ alignSelf: "flex-start" }}>
-                    {busy && <span className="btn-spin" />}
-                    Claim Payout (Net: {formatUsdc(claimBreakdown.netPayout)} USDC)
-                  </button>
-                </div>
-              )}
             </motion.div>
           )}
 
@@ -397,6 +389,51 @@ export function CircleDetail({
           )}
         </AnimatePresence>
 
+        {unclaimedRounds.length > 0 && (
+          <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 16 }}>
+            {unclaimedRounds.map((ur) => {
+              const remRounds = memberCount - 1 - ur.roundIndex;
+              const liability = contribution * BigInt(remRounds);
+              return (
+                <div key={ur.roundIndex} style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%" }}>
+                  <div style={breakdownBox}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                      <Award size={16} className="grad-text" />
+                      <h4 style={{ margin: 0, fontSize: "14px", fontWeight: 700 }}>
+                        Claim Payout Breakdown (Round {ur.roundIndex + 1})
+                      </h4>
+                    </div>
+                    <div style={breakdownRow}>
+                      <span style={breakdownLabel}>Gross Pot ({memberCount} members)</span>
+                      <span className="mono" style={breakdownVal}>{formatUsdc(pot)} USDC</span>
+                    </div>
+                    <div style={breakdownRow}>
+                      <span style={breakdownLabel}>Future Liability ({remRounds} rounds)</span>
+                      <span className="mono" style={breakdownVal}>{formatUsdc(liability)} USDC</span>
+                    </div>
+                    <div style={breakdownRow}>
+                      <span style={breakdownLabel}>Current Collateral Locked</span>
+                      <span className="mono" style={breakdownVal}>{formatUsdc(collateral)} USDC</span>
+                    </div>
+                    <div style={{ ...breakdownRow, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 6, color: "#3b82f6" }}>
+                      <span style={{ ...breakdownLabel, fontWeight: 700 }}>Retained to Collateral</span>
+                      <span className="mono" style={{ ...breakdownVal, fontWeight: 700 }}>+{formatUsdc(ur.withheld)} USDC</span>
+                    </div>
+                    <div style={{ ...breakdownRow, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 6, color: "#10b981" }}>
+                      <span style={{ ...breakdownLabel, fontWeight: 800 }}>Net Payout to Wallet</span>
+                      <span className="mono" style={{ ...breakdownVal, fontWeight: 800 }}>{formatUsdc(ur.netPayout)} USDC</span>
+                    </div>
+                  </div>
+                  <button className="btn success" disabled={busy} onClick={() => claim(ur.roundIndex)} style={{ alignSelf: "flex-start" }}>
+                    {busy && <span className="btn-spin" />}
+                    Claim Payout (Net: {formatUsdc(ur.netPayout)} USDC)
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         <TxStatus hash={hash} isPending={isPending} isConfirming={isConfirming} isConfirmed={isConfirmed} error={error} />
 
         <div style={gasWarningBox}>
@@ -408,7 +445,7 @@ export function CircleDetail({
       </motion.div>
 
       <motion.div variants={itemVariants}>
-        <SchedulePanel address={address} members={members} currentRound={currentRound} state={state} />
+        <SchedulePanel address={address} members={members} currentRound={currentRound} state={state} allRoundsData={allRoundsData} />
       </motion.div>
 
       <motion.div variants={itemVariants}>
@@ -422,11 +459,13 @@ function SchedulePanel({
   members,
   currentRound,
   state,
+  allRoundsData,
 }: {
   address: `0x${string}`;
   members: `0x${string}`[];
   currentRound: number;
   state: number;
+  allRoundsData: any;
 }) {
   const { address: account } = useAccount();
   return (
@@ -442,18 +481,29 @@ function SchedulePanel({
           const done = state === CircleState.Completed || i < currentRound;
           const active = state === CircleState.Active && i === currentRound;
           const mine = account && m.toLowerCase() === account.toLowerCase();
+          
+          const closed = allRoundsData ? Boolean(allRoundsData[i * 4]?.result) : done;
+          const claimed = allRoundsData ? Boolean(allRoundsData[i * 4 + 1]?.result) : false;
+          
           return (
             <div key={m + i} className="tl-item">
               <div className="tl-node">
-                <span className={"dot" + (done ? " done" : active ? " active" : "")} />
+                <span className={"dot" + (closed ? " done" : active ? " active" : "")} />
                 <span className="tl-round">Round {i + 1}</span>
               </div>
               <div className="spacer" />
               <span className="mono" style={{ fontWeight: mine ? 700 : 500 }}>
                 {shortAddr(m)}{mine ? " (you)" : ""}
               </span>
-              {done && <span className="badge green" style={{ padding: "3px 9px", fontSize: "11px" }}>paid</span>}
-              {active && <span className="badge blue" style={{ padding: "3px 9px", fontSize: "11px" }}>active</span>}
+              {closed ? (
+                claimed ? (
+                  <span className="badge green" style={{ padding: "3px 9px", fontSize: "11px" }}>claimed</span>
+                ) : (
+                  <span className="badge orange" style={{ padding: "3px 9px", fontSize: "11px" }}>unclaimed</span>
+                )
+              ) : active ? (
+                <span className="badge blue" style={{ padding: "3px 9px", fontSize: "11px" }}>active</span>
+              ) : null}
             </div>
           );
         })}

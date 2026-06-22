@@ -46,6 +46,8 @@ contract SavingsCircle is ReentrancyGuard {
     mapping(uint256 => uint256) public roundPot; // round => collected pot
     mapping(uint256 => bool) public roundClosed; // round => settled
     mapping(uint256 => bool) public payoutClaimed; // round => beneficiary withdrew
+    mapping(uint256 => uint256) public claimablePayout; // round => net payout
+    mapping(uint256 => uint256) public withheldFromPayout; // round => withheld collateral
 
     // --- Events (used for off-chain reputation & schedule indexing) ---
     event MemberJoined(address indexed member, uint256 index, uint256 collateral);
@@ -56,7 +58,7 @@ contract SavingsCircle is ReentrancyGuard {
     event PayoutClaimed(uint256 indexed round, address indexed beneficiary, uint256 amount);
     event CircleCompleted(uint256 endTime);
     event CircleCancelled(uint256 timestamp);
-    event CollateralWithheld(address indexed member, uint256 amount);
+    event CollateralWithheld(uint256 indexed round, address indexed member, uint256 amount);
     event CollateralWithdrawn(address indexed member, uint256 amount);
 
     // --- Errors ---
@@ -124,7 +126,7 @@ contract SavingsCircle is ReentrancyGuard {
     ///         Requires prior USDC approve() for collateralAmount.
     function join() external nonReentrant {
         if (state != State.Recruiting) revert NotRecruiting();
-        if (block.timestamp > joinDeadline) revert JoinDeadlinePassed();
+        if (block.timestamp >= joinDeadline) revert JoinDeadlinePassed();
         if (isMember[msg.sender]) revert AlreadyMember();
         if (members.length >= memberCount) revert CircleFull();
 
@@ -152,7 +154,7 @@ contract SavingsCircle is ReentrancyGuard {
         collateral[msg.sender] = 0;
         isMember[msg.sender] = false;
 
-        // Remove from members list by swapping with the last element and popping
+        // Remove from members list by shifting to maintain order
         uint256 len = members.length;
         uint256 index = type(uint256).max;
         for (uint256 i = 0; i < len; i++) {
@@ -163,7 +165,9 @@ contract SavingsCircle is ReentrancyGuard {
         }
 
         if (index != type(uint256).max) {
-            members[index] = members[len - 1];
+            for (uint256 i = index; i < len - 1; i++) {
+                members[i] = members[i + 1];
+            }
             members.pop();
         }
 
@@ -228,7 +232,29 @@ contract SavingsCircle is ReentrancyGuard {
         }
 
         roundClosed[round] = true;
-        emit RoundClosed(round, members[round], roundPot[round]);
+        
+        address beneficiary = members[round];
+        uint256 gross = roundPot[round];
+
+        // Dynamic collateral withholding to cover remaining round liabilities
+        uint256 remRounds = memberCount - 1 - round;
+        uint256 liability = contributionAmount * remRounds;
+        uint256 currCollateral = collateral[beneficiary];
+        uint256 withholdAmount = 0;
+
+        if (liability > currCollateral) {
+            withholdAmount = liability - currCollateral;
+            if (withholdAmount > gross) {
+                withholdAmount = gross;
+            }
+            collateral[beneficiary] = currCollateral + withholdAmount;
+            emit CollateralWithheld(round, beneficiary, withholdAmount);
+        }
+
+        withheldFromPayout[round] = withholdAmount;
+        claimablePayout[round] = gross - withholdAmount;
+
+        emit RoundClosed(round, beneficiary, gross);
 
         // Advance.
         if (round + 1 == memberCount) {
@@ -248,23 +274,11 @@ contract SavingsCircle is ReentrancyGuard {
         if (payoutClaimed[round]) revert AlreadyClaimed();
 
         payoutClaimed[round] = true;
-        uint256 amount = roundPot[round];
+        uint256 amount = claimablePayout[round];
 
-        // Dynamic collateral withholding to cover remaining round liabilities
-        uint256 remRounds = memberCount - 1 - round;
-        uint256 liability = contributionAmount * remRounds;
-        uint256 currCollateral = collateral[msg.sender];
-        if (liability > currCollateral) {
-            uint256 withholdAmount = liability - currCollateral;
-            if (withholdAmount > amount) {
-                withholdAmount = amount;
-            }
-            collateral[msg.sender] = currCollateral + withholdAmount;
-            amount -= withholdAmount;
-            emit CollateralWithheld(msg.sender, withholdAmount);
+        if (amount > 0) {
+            usdc.safeTransfer(msg.sender, amount);
         }
-
-        usdc.safeTransfer(msg.sender, amount);
         emit PayoutClaimed(round, msg.sender, amount);
     }
 
