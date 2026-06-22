@@ -81,12 +81,14 @@ contract SavingsCircle is ReentrancyGuard {
         address _creator,
         uint256 _contributionAmount,
         uint8 _memberCount,
-        uint256 _roundDuration
+        uint256 _roundDuration,
+        uint256 _recruitingDuration
     ) {
         require(_usdc != address(0), "usdc=0");
         require(_memberCount >= 2, "memberCount<2");
         require(_contributionAmount > 0, "contribution=0");
         require(_roundDuration > 0, "duration=0");
+        require(_recruitingDuration > 0, "recruiting=0");
 
         usdc = IERC20(_usdc);
         creator = _creator;
@@ -95,7 +97,7 @@ contract SavingsCircle is ReentrancyGuard {
         memberCount = _memberCount;
         roundDuration = _roundDuration;
         state = State.Recruiting;
-        joinDeadline = block.timestamp + (_roundDuration >= 1 days ? 7 days : (_roundDuration * _memberCount));
+        joinDeadline = block.timestamp + _recruitingDuration;
     }
 
     // --- Views ---

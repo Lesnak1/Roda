@@ -15,10 +15,18 @@ const DURATIONS = [
   { label: "1 week", value: 604800 },
 ];
 
+const RECRUITING_DURATIONS = [
+  { label: "5 minutes (demo)", value: 300 },
+  { label: "1 hour", value: 3600 },
+  { label: "1 day", value: 86400 },
+  { label: "7 days", value: 604800 },
+];
+
 export function CreateCircle({ onCreated }: { onCreated: () => void }) {
   const [amount, setAmount] = useState("10");
   const [members, setMembers] = useState(3);
   const [duration, setDuration] = useState(86400);
+  const [recruiting, setRecruiting] = useState(604800);
 
   const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
   const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash });
@@ -34,7 +42,7 @@ export function CreateCircle({ onCreated }: { onCreated: () => void }) {
         address: FACTORY_ADDRESS,
         abi: factoryAbi,
         functionName: "createCircle",
-        args: [parseUsdc(amount), members, BigInt(duration)],
+        args: [parseUsdc(amount), members, BigInt(duration), BigInt(recruiting)],
       },
       { onSuccess: () => setTimeout(onCreated, 2500) }
     );
@@ -88,6 +96,23 @@ export function CreateCircle({ onCreated }: { onCreated: () => void }) {
             onChange={(e) => setDuration(Number(e.target.value))}
           >
             {DURATIONS.map((d) => (
+              <option key={d.value} value={d.value}>
+                {d.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="field">
+          <label className="label" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <Calendar size={14} className="muted" />
+            Recruiting duration
+          </label>
+          <select
+            className="select"
+            value={recruiting}
+            onChange={(e) => setRecruiting(Number(e.target.value))}
+          >
+            {RECRUITING_DURATIONS.map((d) => (
               <option key={d.value} value={d.value}>
                 {d.label}
               </option>

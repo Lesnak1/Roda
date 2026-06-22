@@ -28,7 +28,7 @@ contract SavingsCircleTest is Test {
     }
 
     function _newCircle() internal returns (SavingsCircle) {
-        address addr = factory.createCircle(CONTRIBUTION, MEMBERS, DURATION);
+        address addr = factory.createCircle(CONTRIBUTION, MEMBERS, DURATION, 7 days);
         return SavingsCircle(addr);
     }
 
@@ -267,12 +267,14 @@ contract SavingsCircleTest is Test {
     }
 
     function testJoinDeadlinePassed() public {
-        SavingsCircle c = _newCircle();
+        // Create circle with 1 hour recruiting duration
+        address addr = factory.createCircle(CONTRIBUTION, MEMBERS, DURATION, 1 hours);
+        SavingsCircle c = SavingsCircle(addr);
         
         _join(c, alice);
         
-        // Warp past join deadline (7 days for DURATION = 1 days)
-        vm.warp(block.timestamp + 8 days);
+        // Warp past 1 hour deadline
+        vm.warp(block.timestamp + 2 hours);
         
         // Join reverts
         vm.startPrank(bob);

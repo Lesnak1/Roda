@@ -7,6 +7,7 @@ export const factoryAbi = [
       { name: "contributionAmount", type: "uint256" },
       { name: "memberCount", type: "uint8" },
       { name: "roundDuration", type: "uint256" },
+      { name: "recruitingDuration", type: "uint256" },
     ],
     outputs: [{ name: "circleAddr", type: "address" }],
   },
@@ -35,6 +36,7 @@ export const factoryAbi = [
           { name: "contributionAmount", type: "uint256" },
           { name: "memberCount", type: "uint8" },
           { name: "roundDuration", type: "uint256" },
+          { name: "recruitingDuration", type: "uint256" },
           { name: "createdAt", type: "uint256" },
         ],
       },
@@ -49,6 +51,7 @@ export const factoryAbi = [
       { name: "contributionAmount", type: "uint256", indexed: false },
       { name: "memberCount", type: "uint8", indexed: false },
       { name: "roundDuration", type: "uint256", indexed: false },
+      { name: "recruitingDuration", type: "uint256", indexed: false },
     ],
   },
 ] as const;

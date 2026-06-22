@@ -15,6 +15,7 @@ contract CircleFactory {
         uint256 contributionAmount; // 6 decimals (ERC-20 USDC)
         uint8 memberCount;
         uint256 roundDuration;
+        uint256 recruitingDuration;
         uint256 createdAt;
     }
 
@@ -26,7 +27,8 @@ contract CircleFactory {
         address indexed creator,
         uint256 contributionAmount,
         uint8 memberCount,
-        uint256 roundDuration
+        uint256 roundDuration,
+        uint256 recruitingDuration
     );
 
     constructor(address _usdc) {
@@ -38,17 +40,20 @@ contract CircleFactory {
     /// @param contributionAmount Per-round contribution in USDC (6 decimals).
     /// @param memberCount Number of seats (== number of rounds).
     /// @param roundDuration Seconds allowed per round before it can be force-closed.
+    /// @param recruitingDuration Seconds allowed for recruiting before join deadline.
     function createCircle(
         uint256 contributionAmount,
         uint8 memberCount,
-        uint256 roundDuration
+        uint256 roundDuration,
+        uint256 recruitingDuration
     ) external returns (address circleAddr) {
         SavingsCircle circle = new SavingsCircle(
             usdc,
             msg.sender,
             contributionAmount,
             memberCount,
-            roundDuration
+            roundDuration,
+            recruitingDuration
         );
         circleAddr = address(circle);
 
@@ -59,12 +64,13 @@ contract CircleFactory {
                 contributionAmount: contributionAmount,
                 memberCount: memberCount,
                 roundDuration: roundDuration,
+                recruitingDuration: recruitingDuration,
                 createdAt: block.timestamp
             })
         );
         circlesByCreator[msg.sender].push(circles.length - 1);
 
-        emit CircleCreated(circleAddr, msg.sender, contributionAmount, memberCount, roundDuration);
+        emit CircleCreated(circleAddr, msg.sender, contributionAmount, memberCount, roundDuration, recruitingDuration);
     }
 
     function circleCount() external view returns (uint256) {

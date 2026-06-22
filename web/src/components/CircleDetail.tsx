@@ -95,6 +95,21 @@ export function CircleDetail({
   const payoutClaimed = Boolean(roundData?.[3]?.result);
   const isBeneficiary = account && beneficiary ? account.toLowerCase() === beneficiary.toLowerCase() : false;
 
+  const claimBreakdown = useMemo(() => {
+    if (state !== CircleState.Active || !isBeneficiary || !roundClosed || payoutClaimed) return null;
+    const remRounds = memberCount - 1 - currentRound;
+    const liability = contribution * BigInt(remRounds);
+    const withholdAmount = liability > collateral ? liability - collateral : 0n;
+    const finalWithhold = withholdAmount > pot ? pot : withholdAmount;
+    const netPayout = pot - finalWithhold;
+    return {
+      remRounds,
+      liability,
+      withholdAmount: finalWithhold,
+      netPayout,
+    };
+  }, [state, isBeneficiary, roundClosed, payoutClaimed, memberCount, currentRound, contribution, collateral, pot]);
+
   const { data: allowance, refetch: refetchAllowance } = useReadContract({
     address: USDC_ADDRESS,
     abi: erc20Abi,
@@ -326,10 +341,36 @@ export function CircleDetail({
               <button className="btn ghost" disabled={busy} onClick={() => call("closeRound")}>
                 Close Round
               </button>
-              {isBeneficiary && roundClosed && !payoutClaimed && (
-                <button className="btn success" disabled={busy} onClick={() => claim(currentRound)}>
-                  {busy && <span className="btn-spin" />}Claim Pot ({formatUsdc(pot)} USDC)
-                </button>
+              {isBeneficiary && roundClosed && !payoutClaimed && claimBreakdown && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%", marginTop: 12 }}>
+                  <div style={breakdownBox}>
+                    <h4 style={{ margin: "0 0 8px", fontSize: "14px", fontWeight: 700 }}>Claim Payout Breakdown</h4>
+                    <div style={breakdownRow}>
+                      <span style={breakdownLabel}>Gross Pot ({memberCount} members)</span>
+                      <span className="mono" style={breakdownVal}>{formatUsdc(pot)} USDC</span>
+                    </div>
+                    <div style={breakdownRow}>
+                      <span style={breakdownLabel}>Future Liability ({claimBreakdown.remRounds} rounds)</span>
+                      <span className="mono" style={breakdownVal}>{formatUsdc(claimBreakdown.liability)} USDC</span>
+                    </div>
+                    <div style={breakdownRow}>
+                      <span style={breakdownLabel}>Current Collateral Locked</span>
+                      <span className="mono" style={breakdownVal}>{formatUsdc(collateral)} USDC</span>
+                    </div>
+                    <div style={{ ...breakdownRow, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 6, color: "#3b82f6" }}>
+                      <span style={{ ...breakdownLabel, fontWeight: 700 }}>Retained to Collateral</span>
+                      <span className="mono" style={{ ...breakdownVal, fontWeight: 700 }}>+{formatUsdc(claimBreakdown.withholdAmount)} USDC</span>
+                    </div>
+                    <div style={{ ...breakdownRow, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 6, color: "#10b981" }}>
+                      <span style={{ ...breakdownLabel, fontWeight: 800 }}>Net Payout to Wallet</span>
+                      <span className="mono" style={{ ...breakdownVal, fontWeight: 800 }}>{formatUsdc(claimBreakdown.netPayout)} USDC</span>
+                    </div>
+                  </div>
+                  <button className="btn success" disabled={busy} onClick={() => claim(currentRound)} style={{ alignSelf: "flex-start" }}>
+                    {busy && <span className="btn-spin" />}
+                    Claim Payout (Net: {formatUsdc(claimBreakdown.netPayout)} USDC)
+                  </button>
+                </div>
               )}
             </motion.div>
           )}
@@ -357,6 +398,13 @@ export function CircleDetail({
         </AnimatePresence>
 
         <TxStatus hash={hash} isPending={isPending} isConfirming={isConfirming} isConfirmed={isConfirmed} error={error} />
+
+        <div style={gasWarningBox}>
+          <ShieldCheck size={14} style={{ color: "var(--accent)", flexShrink: 0 }} />
+          <span>
+            <b>Decimal Note:</b> Gas fees on Arc are settled in native gas USDC (18 decimals), while circle contributions use ERC-20 USDC (6 decimals).
+          </span>
+        </div>
       </motion.div>
 
       <motion.div variants={itemVariants}>
@@ -418,3 +466,42 @@ const sTitle: CSSProperties = { margin: "14px 0 20px", fontSize: 28, letterSpaci
 const sActions: CSSProperties = { marginTop: 22, gap: 12 };
 const sk1: CSSProperties = { width: "40%", marginTop: 14 };
 const sk2: CSSProperties = { width: "70%", marginTop: 16, height: 28 };
+
+const breakdownBox: CSSProperties = {
+  backgroundColor: "var(--bg-card-hover)",
+  border: "1px solid var(--border-color)",
+  borderRadius: "8px",
+  padding: "14px",
+  display: "flex",
+  flexDirection: "column",
+  gap: "6px",
+  width: "100%",
+};
+
+const breakdownRow: CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  fontSize: "13px",
+};
+
+const breakdownLabel: CSSProperties = {
+  color: "var(--text-muted)",
+};
+
+const breakdownVal: CSSProperties = {
+  fontWeight: 600,
+};
+
+const gasWarningBox: CSSProperties = {
+  marginTop: 18,
+  padding: "10px 12px",
+  borderRadius: "8px",
+  backgroundColor: "rgba(100, 108, 255, 0.06)",
+  border: "1px solid rgba(100, 108, 255, 0.12)",
+  fontSize: "12px",
+  color: "var(--text-muted)",
+  display: "flex",
+  gap: 8,
+  alignItems: "center",
+  lineHeight: 1.4,
+};

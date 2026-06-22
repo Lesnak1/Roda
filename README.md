@@ -1,5 +1,11 @@
 # Roda — Trustless Rotating Savings Circles on Arc
 
+![Arc Network](https://img.shields.io/badge/Network-Arc_Testnet-blue?style=flat-square)
+![USDC](https://img.shields.io/badge/Stablecoin-USDC--6__Decimals-2775CA?style=flat-square)
+![Solidity](https://img.shields.io/badge/Solidity-%5E0.8.28-black?style=flat-square&logo=solidity)
+![Foundry](https://img.shields.io/badge/Built%20with-Foundry-black?style=flat-square)
+![Next.js](https://img.shields.io/badge/Frontend-Next.js--14-black?style=flat-square)
+
 > **Onchain Rotating Savings and Credit Association (ROSCA) powered by USDC on Arc L1.**
 
 Built with passion and expertise by **[Leknax](https://github.com/Lesnak1)**.
@@ -16,12 +22,28 @@ Traditional real-world ROSCAs (known as *tanda*, *susu*, *stokvel*, *gün*, or *
 
 ## Key Features & Utility
 
-1. **Trustless Escrow:** Katkılar (contributions) are held securely by the `SavingsCircle` smart contract, not in any personal bank account or multisig wallet.
+1. **Trustless Escrow:** Contributions are held securely by the `SavingsCircle` smart contract, not in any personal bank account or multisig wallet.
 2. **Default Protection via Collateral:** Every participant locks one round of contribution as a security deposit upon joining. If a member defaults, the contract automatically tops up the pot using their locked collateral, ensuring the designated beneficiary is paid in full.
 3. **Onchain Reputation Indexing:** Contributions and defaults generate immutable blockchain events. Roda uses these events to construct trust and reputation scores directly from contract activity.
 4. **Arc Native Optimization:** Roda is built for Arc, Circle's EVM L1 where USDC is the native gas token, delivering sub-second finality and stablecoin-denominated transactions.
 
 ---
+
+## Protocol Architecture
+
+```mermaid
+flowchart TD
+    User([User])
+    Factory[CircleFactory Contract]
+    Circle[SavingsCircle Contract]
+    USDC[ERC-20 USDC Contract]
+    Rep[Roda Passport UI]
+
+    User -->|Deploys via| Factory
+    User -->|Joins / Contributes / Claims| Circle
+    Circle -->|Locks / Settles / Withholds| USDC
+    Circle -->|Emits Events| Rep
+```
 
 ## Repository Structure
 
@@ -30,7 +52,7 @@ roda/
 ├─ contracts/                      Foundry project (Solidity 0.8.28)
 │  ├─ src/SavingsCircle.sol        Core circle: join → contribute → closeRound → claimPayout → withdrawCollateral
 │  ├─ src/CircleFactory.sol        Deploys and indexes circles for public discovery
-│  ├─ test/SavingsCircle.t.sol     Comprehensive 8-test unit suite (100% pass)
+│  ├─ test/SavingsCircle.t.sol     Comprehensive 12-test unit suite (100% pass)
 │  ├─ script/Deploy.s.sol          Deploys CircleFactory to Arc Testnet
 │  └─ foundry.toml & remappings.txt
 ├─ web/                            Next.js (App Router) + Wagmi v2 + Viem dApp
