@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -130,6 +130,37 @@ contract SavingsCircle is ReentrancyGuard {
             roundDeadline = block.timestamp + roundDuration;
             emit CircleStarted(block.timestamp, roundDeadline);
         }
+    }
+
+    // --- Step: leave (Recruiting) ---
+    /// @notice Leave the circle before it starts, reclaiming the locked collateral.
+    function leave() external nonReentrant {
+        if (state != State.Recruiting) revert NotRecruiting();
+        if (!isMember[msg.sender]) revert NotMember();
+
+        uint256 amount = collateral[msg.sender];
+        collateral[msg.sender] = 0;
+        isMember[msg.sender] = false;
+
+        // Remove from members list by swapping with the last element and popping
+        uint256 len = members.length;
+        uint256 index = type(uint256).max;
+        for (uint256 i = 0; i < len; i++) {
+            if (members[i] == msg.sender) {
+                index = i;
+                break;
+            }
+        }
+
+        if (index != type(uint256).max) {
+            members[index] = members[len - 1];
+            members.pop();
+        }
+
+        if (amount > 0) {
+            usdc.safeTransfer(msg.sender, amount);
+        }
+        emit CollateralWithdrawn(msg.sender, amount);
     }
 
     // --- Step: contribute (Active) ---

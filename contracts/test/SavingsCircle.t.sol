@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.28;
 
 import {Test} from "forge-std/Test.sol";
 import {CircleFactory} from "../src/CircleFactory.sol";
@@ -176,5 +176,61 @@ contract SavingsCircleTest is Test {
         vm.expectRevert(SavingsCircle.AlreadyContributed.selector);
         c.contribute();
         vm.stopPrank();
+    }
+
+    function testLeaveDuringRecruiting() public {
+        SavingsCircle c = _newCircle();
+        
+        // Alice joins -> locked collateral
+        _join(c, alice);
+        assertEq(c.collateral(alice), CONTRIBUTION);
+        assertEq(c.membersJoined(), 1);
+        assertTrue(c.isMember(alice));
+        
+        // Alice leaves
+        vm.prank(alice);
+        c.leave();
+        
+        assertEq(c.collateral(alice), 0);
+        assertEq(c.membersJoined(), 0);
+        assertFalse(c.isMember(alice));
+    }
+
+    function testSerialDefaultDeficit() public {
+        SavingsCircle c = _newCircle();
+        _join(c, alice);
+        _join(c, bob);
+        _join(c, carol);
+
+        // Round 0: Happy round
+        _contribute(c, alice);
+        _contribute(c, bob);
+        _contribute(c, carol);
+        c.closeRound();
+        vm.prank(alice);
+        c.claimPayout(0);
+
+        // Round 1: Bob (beneficiary) defaults on Round 1 and Round 2
+        _contribute(c, alice);
+        // Bob defaults
+        _contribute(c, carol);
+        
+        vm.warp(block.timestamp + DURATION + 1);
+        c.closeRound(); // Bob's collateral is consumed to cover Round 1 pot.
+        
+        assertEq(c.collateral(bob), 0);
+        vm.prank(bob);
+        c.claimPayout(1); // Bob gets the full pot because his collateral covered his default.
+
+        // Round 2: Bob defaults again. No collateral left!
+        _contribute(c, alice);
+        // Bob defaults again
+        _contribute(c, carol);
+        
+        vm.warp(block.timestamp + DURATION * 2 + 1);
+        c.closeRound(); // Bob defaults again, but collateral is 0.
+
+        // The round pot is short! It has only alice + carol contributions.
+        assertEq(c.roundPot(2), CONTRIBUTION * 2);
     }
 }

@@ -131,4 +131,11 @@ export const circleAbi = [
     inputs: [],
     outputs: [],
   },
+  {
+    type: "function",
+    name: "leave",
+    stateMutability: "nonpayable",
+    inputs: [],
+    outputs: [],
+  },
 ] as const;

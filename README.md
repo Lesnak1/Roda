@@ -118,3 +118,19 @@ To deploy Roda to Vercel:
    - `NEXT_PUBLIC_USDC_ADDRESS` (`0x3600000000000000000000000000000000000000`)
    - `NEXT_PUBLIC_ARC_RPC_URL` (`https://rpc.testnet.arc.network`)
 4. **Deploy:** Hit deploy. Vercel will automatically compile, optimize, and launch your dApp!
+
+---
+
+## Security Model & Collateral Boundaries
+
+Roda is designed as a trustless, self-contained escrow system. However, the current economic security model has defined boundaries that are important to note for production usage:
+
+### Collateral Safety & Deficit Risk
+* **The MVP Rule:** Every member locks **1 round** of contribution as collateral. This covers exactly **one default** per member.
+* **The Deficit Boundary:** If a member receives the round pot early (e.g., Round 1) and subsequently defaults on *multiple* later rounds, their single locked collateral only covers their first default. Subsequent defaults by that member will result in a deficit in the pot for later beneficiaries.
+* **Test Coverage:** This economic boundary condition is formally verified and documented in the Foundry test suite under `testSerialDefaultDeficit()`.
+
+### Production Mitigations (Roadmap v2)
+To achieve complete economic safety for larger, long-term circles, we plan to implement:
+* **Collateral Withholding:** Retaining a portion of the payout pot for early beneficiaries inside the contract as additional collateral until the circle terminates.
+* **Discount Bidding ROSCA Model:** Switching to a bidding model where members bid discounts to receive the pot early, inherently reducing the economic incentive to default.

@@ -116,7 +116,7 @@ export function CircleDetail({
       { onSuccess: onTx }
     );
   }
-  function call(functionName: "join" | "contribute" | "closeRound" | "withdrawCollateral") {
+  function call(functionName: "join" | "contribute" | "closeRound" | "withdrawCollateral" | "leave") {
     reset();
     writeContract({ ...baseRead, functionName }, { onSuccess: onTx });
   }
@@ -213,9 +213,20 @@ export function CircleDetail({
               style={sActions}
             >
               {isMember ? (
-                <div className="alert ok" style={{ width: "100%" }}>
-                  <CheckCircle size={16} className="ai" />
-                  <span>You have joined this circle. Waiting for other members to fill the remaining seats...</span>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%" }}>
+                  <div className="alert ok" style={{ width: "100%" }}>
+                    <CheckCircle size={16} className="ai" />
+                    <span>You have joined this circle. Waiting for other members to fill the remaining seats...</span>
+                  </div>
+                  <button
+                    className="btn ghost sm"
+                    disabled={busy}
+                    onClick={() => call("leave")}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 6, alignSelf: "flex-start" }}
+                  >
+                    {busy && <span className="btn-spin" />}
+                    Leave Circle & Refund Collateral
+                  </button>
                 </div>
               ) : needApproveForJoin ? (
                 <button className="btn" disabled={busy} onClick={() => approve(collateral)}>
