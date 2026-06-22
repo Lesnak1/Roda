@@ -26,38 +26,59 @@ export function ReputationPanel({
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      if (!client) return;
+      if (!client || !members || members.length === 0) return;
       setLoading(true);
       setErr(null);
       try {
         const acc: Record<string, Rep> = {};
-        const bump = (a: string, k: keyof Rep) => {
-          const key = a.toLowerCase();
-          acc[key] = acc[key] ?? { contributions: 0, defaults: 0 };
-          acc[key][k] += 1;
-        };
-        const contributed = await client.getContractEvents({
-          address,
-          abi: circleAbi,
-          eventName: "Contributed",
-          fromBlock: 0n,
-          toBlock: "latest",
-        });
-        const defaulted = await client.getContractEvents({
-          address,
-          abi: circleAbi,
-          eventName: "Defaulted",
-          fromBlock: 0n,
-          toBlock: "latest",
-        });
-        for (const e of contributed) {
-          const m = (e.args as { member?: string }).member;
-          if (m) bump(m, "contributions");
+        for (const m of members) {
+          acc[m.toLowerCase()] = { contributions: 0, defaults: 0 };
         }
-        for (const e of defaulted) {
-          const m = (e.args as { member?: string }).member;
-          if (m) bump(m, "defaults");
+
+        // Construct multicall queries for roundClosed and hasContributed
+        const contracts = [];
+        for (let r = 0; r < members.length; r++) {
+          contracts.push({
+            address,
+            abi: circleAbi,
+            functionName: "roundClosed",
+            args: [BigInt(r)],
+          });
+          for (const m of members) {
+            contracts.push({
+              address,
+              abi: circleAbi,
+              functionName: "hasContributed",
+              args: [BigInt(r), m],
+            });
+          }
         }
+
+        const results = await client.multicall({
+          contracts,
+        });
+
+        // Parse results
+        let ptr = 0;
+        for (let r = 0; r < members.length; r++) {
+          const closed = Boolean(results[ptr]?.result);
+          ptr++;
+
+          for (const m of members) {
+            const hasPaid = Boolean(results[ptr]?.result);
+            ptr++;
+
+            if (closed) {
+              const key = m.toLowerCase();
+              if (hasPaid) {
+                acc[key].contributions += 1;
+              } else {
+                acc[key].defaults += 1;
+              }
+            }
+          }
+        }
+
         if (!cancelled) setRep(acc);
       } catch (e) {
         if (!cancelled) setErr((e as Error).message);
@@ -69,7 +90,7 @@ export function ReputationPanel({
     return () => {
       cancelled = true;
     };
-  }, [client, address]);
+  }, [client, address, members]);
 
   return (
     <div className="card">
