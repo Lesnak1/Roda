@@ -9,7 +9,6 @@ import { CircleList } from "@/components/CircleList";
 import { CircleDetail } from "@/components/CircleDetail";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { FACTORY_ADDRESS } from "@/lib/contracts";
-import { Simulator } from "@/components/Simulator";
 
 const pageVariants = {
   hidden: { opacity: 0, y: 15 },
@@ -31,7 +30,7 @@ const childVariants = {
 };
 
 export default function Home() {
-  const [tab, setTab] = useState<"discover" | "create" | "simulator">("discover");
+  const [tab, setTab] = useState<"discover" | "create">("discover");
   const [selected, setSelected] = useState<`0x${string}` | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -129,16 +128,10 @@ export default function Home() {
                       >
                         Create Circle
                       </button>
-                      <button
-                        className={tab === "simulator" ? "seg active" : "seg"}
-                        onClick={() => setTab("simulator")}
-                      >
-                        Interactive Simulator
-                      </button>
                     </div>
 
                     <AnimatePresence mode="wait">
-                      {tab === "create" && (
+                      {tab === "create" ? (
                         <motion.div
                           key="createCircle"
                           initial={{ opacity: 0, y: 10 }}
@@ -153,8 +146,7 @@ export default function Home() {
                             }}
                           />
                         </motion.div>
-                      )}
-                      {tab === "discover" && (
+                      ) : (
                         <motion.div
                           key="circleList"
                           initial={{ opacity: 0, y: 10 }}
@@ -163,17 +155,6 @@ export default function Home() {
                           transition={{ duration: 0.2 }}
                         >
                           <CircleList key={reloadKey} onSelect={(a) => setSelected(a)} />
-                        </motion.div>
-                      )}
-                      {tab === "simulator" && (
-                        <motion.div
-                          key="simulatorTab"
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          <Simulator />
                         </motion.div>
                       )}
                     </AnimatePresence>
