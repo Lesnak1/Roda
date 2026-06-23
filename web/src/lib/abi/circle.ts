@@ -123,6 +123,13 @@ export const circleAbi = [
   },
   {
     type: "function",
+    name: "payoutClaimedAmount",
+    stateMutability: "view",
+    inputs: [{ name: "", type: "uint256" }],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
     name: "claimablePayout",
     stateMutability: "view",
     inputs: [{ name: "", type: "uint256" }],

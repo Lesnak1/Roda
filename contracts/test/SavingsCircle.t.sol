@@ -325,9 +325,69 @@ contract SavingsCircleTest is Test {
         uint256 beforeAlice = usdc.balanceOf(alice);
         vm.prank(alice);
         c.claimPayout(0);
-        
+
         // Alice receives the exact pre-calculated claimablePayout[0] (200 USDC).
         assertEq(usdc.balanceOf(alice) - beforeAlice, CONTRIBUTION * 2);
         assertTrue(c.payoutClaimed(0));
     }
+
+    function testLateDefaultDebtRecovery() public {
+        SavingsCircle c = _newCircle();
+        _join(c, alice);
+        _join(c, bob);
+        _join(c, carol);
+
+        // Carol is scheduled for Round 2.
+        // Round 0: Alice is beneficiary. Carol defaults.
+        // Alice and Bob contribute.
+        _contribute(c, alice);
+        _contribute(c, bob);
+        
+        // Close round 0: Carol's default is covered by her collateral.
+        // Carol's collateral becomes 0.
+        c.closeRound();
+        assertEq(c.collateral(carol), 0);
+        
+        // Round 1: Bob is beneficiary. Carol defaults again.
+        // Alice and Bob contribute.
+        _contribute(c, alice);
+        _contribute(c, bob);
+        
+        // Carol's collateral is 0, so she cannot cover. Deficit is recorded.
+        vm.warp(block.timestamp + DURATION + 1);
+        c.closeRound();
+        
+        // Carol's debt is 100 USDC, deficit in Round 1 is 100 USDC.
+        assertEq(c.memberDebt(carol), CONTRIBUTION);
+        assertEq(c.debtByMemberAndRound(carol, 1), CONTRIBUTION);
+        
+        // Bob claims what is currently claimable for Round 1 (200 USDC instead of 300 USDC)
+        uint256 beforeBob = usdc.balanceOf(bob);
+        vm.prank(bob);
+        c.claimPayout(1);
+        assertEq(usdc.balanceOf(bob) - beforeBob, CONTRIBUTION * 2);
+        
+        // Round 2: Carol is beneficiary. Alice and Bob contribute.
+        _contribute(c, alice);
+        _contribute(c, bob);
+        
+        // Close round 2: Carol's debt of 100 USDC is deducted from Carol's Round 2 gross pot (200 USDC)
+        // 100 USDC is refunded to Round 1 claimablePayout.
+        c.closeRound();
+        
+        assertEq(c.claimablePayout(2), CONTRIBUTION); // Carol's gross was 200, minus 100 debt = 100 net payout
+        assertEq(c.claimablePayout(1), CONTRIBUTION * 3); // Round 1 was 200, plus 100 recovered = 300 total
+        
+        // Bob can claim the remaining 100 USDC refund!
+        vm.prank(bob);
+        c.claimPayout(1);
+        assertEq(usdc.balanceOf(bob) - beforeBob, CONTRIBUTION * 3);
+        
+        // Carol gets her net payout (100 USDC)
+        uint256 beforeCarol = usdc.balanceOf(carol);
+        vm.prank(carol);
+        c.claimPayout(2);
+        assertEq(usdc.balanceOf(carol) - beforeCarol, CONTRIBUTION);
+    }
 }
+

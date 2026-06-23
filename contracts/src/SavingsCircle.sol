@@ -45,9 +45,13 @@ contract SavingsCircle is ReentrancyGuard {
     mapping(uint256 => mapping(address => bool)) public hasContributed; // round => member => paid
     mapping(uint256 => uint256) public roundPot; // round => collected pot
     mapping(uint256 => bool) public roundClosed; // round => settled
-    mapping(uint256 => bool) public payoutClaimed; // round => beneficiary withdrew
+    mapping(uint256 => bool) public payoutClaimed; // round => beneficiary withdrew full payout
+    mapping(uint256 => uint256) public payoutClaimedAmount; // round => amount already claimed
     mapping(uint256 => uint256) public claimablePayout; // round => net payout
     mapping(uint256 => uint256) public withheldFromPayout; // round => withheld collateral
+
+    mapping(address => uint256) public memberDebt; // member => unpaid contribution debt (6 decimals)
+    mapping(address => mapping(uint256 => uint256)) public debtByMemberAndRound; // member => round => unpaid amount
 
     // --- Events (used for off-chain reputation & schedule indexing) ---
     event MemberJoined(address indexed member, uint256 index, uint256 collateral);
@@ -60,6 +64,8 @@ contract SavingsCircle is ReentrancyGuard {
     event CircleCancelled(uint256 timestamp);
     event CollateralWithheld(uint256 indexed round, address indexed member, uint256 amount);
     event CollateralWithdrawn(address indexed member, uint256 amount);
+    event DebtRecorded(address indexed member, uint256 indexed round, uint256 amount);
+    event DebtRecovered(address indexed member, uint256 indexed round, uint256 amount, uint256 refundedToRound);
 
     // --- Errors ---
     error NotRecruiting();
@@ -226,6 +232,14 @@ contract SavingsCircle is ReentrancyGuard {
                         collateral[m] -= covered;
                         roundPot[round] += covered;
                     }
+                    
+                    uint256 unpaid = contributionAmount - covered;
+                    if (unpaid > 0) {
+                        debtByMemberAndRound[m][round] = unpaid;
+                        memberDebt[m] += unpaid;
+                        emit DebtRecorded(m, round, unpaid);
+                    }
+                    
                     emit Defaulted(round, m, covered);
                 }
             }
@@ -235,6 +249,24 @@ contract SavingsCircle is ReentrancyGuard {
         
         address beneficiary = members[round];
         uint256 gross = roundPot[round];
+        uint256 debtToPay = memberDebt[beneficiary] > gross ? gross : memberDebt[beneficiary];
+
+        if (debtToPay > 0) {
+            memberDebt[beneficiary] -= debtToPay;
+            uint256 remainingDebtToPay = debtToPay;
+            for (uint256 r = 0; r < round; r++) {
+                uint256 owed = debtByMemberAndRound[beneficiary][r];
+                if (owed > 0) {
+                    uint256 pay = owed > remainingDebtToPay ? remainingDebtToPay : owed;
+                    debtByMemberAndRound[beneficiary][r] -= pay;
+                    claimablePayout[r] += pay; // Refund the deficit of the prior round
+                    remainingDebtToPay -= pay;
+                    emit DebtRecovered(beneficiary, r, pay, r);
+                    if (remainingDebtToPay == 0) break;
+                }
+            }
+            gross -= debtToPay;
+        }
 
         // Dynamic collateral withholding to cover remaining round liabilities
         uint256 remRounds = memberCount - 1 - round;
@@ -252,9 +284,9 @@ contract SavingsCircle is ReentrancyGuard {
         }
 
         withheldFromPayout[round] = withholdAmount;
-        claimablePayout[round] = gross - withholdAmount;
+        claimablePayout[round] += gross - withholdAmount;
 
-        emit RoundClosed(round, beneficiary, gross);
+        emit RoundClosed(round, beneficiary, roundPot[round]);
 
         // Advance.
         if (round + 1 == memberCount) {
@@ -267,14 +299,18 @@ contract SavingsCircle is ReentrancyGuard {
     }
 
     // --- Step: claim payout (pull pattern) ---
-    /// @notice The round beneficiary withdraws the settled pot.
+    /// @notice The round beneficiary withdraws the settled pot (including any recovered refunds).
     function claimPayout(uint256 round) external nonReentrant {
         if (!roundClosed[round]) revert RoundNotClosed();
         if (msg.sender != members[round]) revert NotBeneficiary();
-        if (payoutClaimed[round]) revert AlreadyClaimed();
 
+        uint256 totalClaimable = claimablePayout[round];
+        uint256 alreadyClaimed = payoutClaimedAmount[round];
+        if (alreadyClaimed >= totalClaimable) revert AlreadyClaimed();
+
+        uint256 amount = totalClaimable - alreadyClaimed;
+        payoutClaimedAmount[round] = totalClaimable;
         payoutClaimed[round] = true;
-        uint256 amount = claimablePayout[round];
 
         if (amount > 0) {
             usdc.safeTransfer(msg.sender, amount);

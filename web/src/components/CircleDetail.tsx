@@ -102,6 +102,7 @@ export function CircleDetail({
       { ...baseRead, functionName: "payoutClaimed", args: [BigInt(i)] },
       { ...baseRead, functionName: "claimablePayout", args: [BigInt(i)] },
       { ...baseRead, functionName: "withheldFromPayout", args: [BigInt(i)] },
+      { ...baseRead, functionName: "payoutClaimedAmount", args: [BigInt(i)] },
     ]);
   }, [members, address]);
 
@@ -117,11 +118,12 @@ export function CircleDetail({
       const beneficiaryAddress = members[i];
       if (beneficiaryAddress.toLowerCase() !== account.toLowerCase()) continue;
       
-      const closed = Boolean(allRoundsData[i * 4]?.result);
-      const claimed = Boolean(allRoundsData[i * 4 + 1]?.result);
-      if (closed && !claimed) {
-        const netPayout = (allRoundsData[i * 4 + 2]?.result as bigint) ?? 0n;
-        const withheld = (allRoundsData[i * 4 + 3]?.result as bigint) ?? 0n;
+      const closed = Boolean(allRoundsData[i * 5]?.result);
+      const claimable = (allRoundsData[i * 5 + 2]?.result as bigint) ?? 0n;
+      const claimedAmount = (allRoundsData[i * 5 + 4]?.result as bigint) ?? 0n;
+      if (closed && claimedAmount < claimable) {
+        const netPayout = claimable - claimedAmount;
+        const withheld = (allRoundsData[i * 5 + 3]?.result as bigint) ?? 0n;
         list.push({
           roundIndex: i,
           netPayout,
@@ -482,8 +484,10 @@ function SchedulePanel({
           const active = state === CircleState.Active && i === currentRound;
           const mine = account && m.toLowerCase() === account.toLowerCase();
           
-          const closed = allRoundsData ? Boolean(allRoundsData[i * 4]?.result) : done;
-          const claimed = allRoundsData ? Boolean(allRoundsData[i * 4 + 1]?.result) : false;
+          const closed = allRoundsData ? Boolean(allRoundsData[i * 5]?.result) : done;
+          const claimable = allRoundsData ? ((allRoundsData[i * 5 + 2]?.result as bigint) ?? 0n) : 0n;
+          const claimedAmount = allRoundsData ? ((allRoundsData[i * 5 + 4]?.result as bigint) ?? 0n) : 0n;
+          const claimed = allRoundsData ? (claimedAmount >= claimable && claimable > 0n) : false;
           
           return (
             <div key={m + i} className="tl-item">
