@@ -22,6 +22,7 @@ export function AIGuardianPanel({
   const [selectedMember, setSelectedMember] = useState<string>("");
   const [loadingRisk, setLoadingRisk] = useState(false);
   const [riskData, setRiskData] = useState<any>(null);
+  const [riskError, setRiskError] = useState<string | null>(null);
   const [executingBailout, setExecutingBailout] = useState(false);
   const [bailoutHash, setBailoutHash] = useState<string | null>(null);
 
@@ -101,6 +102,13 @@ export function AIGuardianPanel({
     }
   }
 
+  // Auto-initialize selectedMember when members list is loaded
+  useEffect(() => {
+    if (members && members.length > 0 && !selectedMember) {
+      setSelectedMember(members[0].toLowerCase());
+    }
+  }, [members, selectedMember]);
+
   useEffect(() => {
     fetchContractData();
   }, [client, address, members]);
@@ -110,6 +118,7 @@ export function AIGuardianPanel({
     setLoadingRisk(true);
     setRiskData(null);
     setBailoutHash(null);
+    setRiskError(null);
     try {
       const response = await fetch("/api/agent", {
         method: "POST",
@@ -124,9 +133,14 @@ export function AIGuardianPanel({
         }),
       });
       const data = await response.json();
-      setRiskData(data);
-    } catch (e) {
+      if (!response.ok || data.error) {
+        setRiskError(data.error || "Failed to analyze risk");
+      } else {
+        setRiskData(data);
+      }
+    } catch (e: any) {
       console.error(e);
+      setRiskError(e.message || "Failed to analyze risk");
     } finally {
       setLoadingRisk(false);
     }
@@ -177,6 +191,7 @@ export function AIGuardianPanel({
             onChange={(e) => {
               setSelectedMember(e.target.value);
               setRiskData(null);
+              setRiskError(null);
               setBailoutHash(null);
             }}
             style={selectStyle}
@@ -195,6 +210,15 @@ export function AIGuardianPanel({
             <RefreshCw size={14} className={loadingData ? "animate-spin" : ""} />
           </button>
         </div>
+
+        {riskError && (
+          <div className="alert err" style={{ marginTop: 10 }}>
+            <AlertCircle size={16} />
+            <div>
+              <b>Error analyzing risk:</b> {riskError}
+            </div>
+          </div>
+        )}
 
         {riskData && (
           <div style={reportContainer}>
