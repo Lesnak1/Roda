@@ -16,6 +16,7 @@ import { formatUsdc, fmtCountdown, shortAddr } from "@/lib/format";
 import { explorerAddress } from "@/lib/chains/arcTestnet";
 import { TxStatus } from "./TxStatus";
 import { ReputationPanel } from "./ReputationPanel";
+import { AIGuardianPanel } from "./AIGuardianPanel";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -452,6 +453,10 @@ export function CircleDetail({
 
       <motion.div variants={itemVariants}>
         <ReputationPanel address={address} members={members} />
+      </motion.div>
+
+      <motion.div variants={itemVariants}>
+        <AIGuardianPanel address={address} members={members} currentRound={currentRound} />
       </motion.div>
     </motion.div>
   );
