@@ -3,7 +3,7 @@
 import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
 import { usePublicClient, useAccount } from "wagmi";
-import { circleAbi } from "@/lib/contracts";
+import { circleAbi, multicallSafe } from "@/lib/contracts";
 import { formatUsdc, shortAddr } from "@/lib/format";
 import { Brain, Cpu, ShieldCheck, AlertCircle, RefreshCw, CheckCircle2, XCircle, Zap } from "lucide-react";
 
@@ -51,7 +51,7 @@ export function AIGuardianPanel({
         }
       }
 
-      const results = await client.multicall({ contracts });
+      const results = await multicallSafe(client, contracts);
 
       // Parse collaterals and debts
       const tempCollaterals: Record<string, number> = {};

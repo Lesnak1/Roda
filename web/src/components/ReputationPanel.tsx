@@ -3,7 +3,7 @@
 import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
 import { usePublicClient } from "wagmi";
-import { circleAbi } from "@/lib/contracts";
+import { circleAbi, multicallSafe } from "@/lib/contracts";
 import { shortAddr } from "@/lib/format";
 import { Award, ShieldCheck, TrendingUp, Sparkles, AlertCircle } from "lucide-react";
 
@@ -54,9 +54,7 @@ export function ReputationPanel({
           }
         }
 
-        const results = await client.multicall({
-          contracts,
-        });
+        const results = await multicallSafe(client, contracts);
 
         // Parse results
         let ptr = 0;

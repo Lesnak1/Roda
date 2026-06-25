@@ -21,3 +21,25 @@ export const CircleState = {
 
 export type CircleStateValue =
   (typeof CircleState)[keyof typeof CircleState];
+
+export async function multicallSafe(client: any, contracts: any[]) {
+  try {
+    return await client.multicall({ contracts });
+  } catch (error: any) {
+    console.warn("Multicall failed or not supported, falling back to individual calls:", error);
+    const promises = contracts.map(async (c) => {
+      try {
+        const res = await client.readContract({
+          address: c.address,
+          abi: c.abi,
+          functionName: c.functionName,
+          args: c.args,
+        });
+        return { status: "success", result: res };
+      } catch (err) {
+        return { status: "failure", error: err };
+      }
+    });
+    return await Promise.all(promises);
+  }
+}

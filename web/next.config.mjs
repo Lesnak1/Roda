@@ -4,6 +4,15 @@ const nextConfig = {
   poweredByHeader: false, // Security: Remove X-Powered-By header to prevent fingerprinting
   compress: true, // Performance: Enable gzip/brotli compression for assets
 
+  webpack: (config) => {
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      '@react-native-async-storage/async-storage': false,
+      'pino-pretty': false,
+    };
+    return config;
+  },
+
   async headers() {
     return [
       {
