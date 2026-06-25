@@ -219,11 +219,14 @@ contract SavingsCircle is ReentrancyGuard {
         bool everyonePaid = roundPot[round] == contributionAmount * memberCount;
         if (!everyonePaid && block.timestamp < roundDeadline) revert RoundNotOver();
 
+        address beneficiary = members[round];
+
         // Cover defaults from collateral.
         if (!everyonePaid) {
             uint256 n = members.length;
             for (uint256 i = 0; i < n; i++) {
                 address m = members[i];
+                if (m == beneficiary) continue;
                 if (!hasContributed[round][m]) {
                     uint256 covered = collateral[m] >= contributionAmount
                         ? contributionAmount
@@ -247,7 +250,6 @@ contract SavingsCircle is ReentrancyGuard {
 
         roundClosed[round] = true;
         
-        address beneficiary = members[round];
         uint256 gross = roundPot[round];
         uint256 debtToPay = memberDebt[beneficiary] > gross ? gross : memberDebt[beneficiary];
 
