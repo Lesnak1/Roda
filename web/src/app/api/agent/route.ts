@@ -77,9 +77,27 @@ Return a JSON response in the following format:
 
     const data = await response.json();
     const resultText = data.choices[0]?.message?.content;
-    const result = JSON.parse(resultText);
+    
+    let result: any = {};
+    try {
+      result = JSON.parse(resultText);
+    } catch (parseErr) {
+      console.error("Failed to parse AI response as JSON:", resultText);
+      throw new Error("AI returned invalid JSON structure.");
+    }
 
-    return NextResponse.json(result);
+    // Normalize keys (handle camelCase vs snake_case, ensure types)
+    const status = result.status ?? (Number(result.riskScore ?? result.risk_score ?? 50) > 50 ? "REJECTED" : "APPROVED");
+    const riskScore = Number(result.riskScore ?? result.risk_score ?? 50);
+    const bailoutAmount = Number(result.bailoutAmount ?? result.bailout_amount ?? 0);
+    const rationale = result.rationale ?? "No rationale provided by agent.";
+
+    return NextResponse.json({
+      status: status.toUpperCase() === "APPROVED" ? "APPROVED" : "REJECTED",
+      riskScore,
+      bailoutAmount,
+      rationale,
+    });
   } catch (error: any) {
     console.error("Agent API error:", error);
     return NextResponse.json({ error: error.message || "Unknown error" }, { status: 500 });
