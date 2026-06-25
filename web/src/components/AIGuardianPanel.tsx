@@ -283,7 +283,7 @@ export function AIGuardianPanel({
                       </>
                     ) : (
                       <>
-                        <Zap size={16} /> Execute 100 USDC Automated Injection
+                        <Zap size={16} /> Execute {riskData.bailoutAmount ?? 100} USDC Automated Injection
                       </>
                     )}
                   </button>
