@@ -163,7 +163,7 @@ export function AIGuardianPanel({
     <div className="card">
       <h3 className="card-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <Brain size={18} className="grad-text" />
-        🤖 AI Liquidity Guardian (DeepSeek v4 Flash)
+        🤖 AI Liquidity Guardian
       </h3>
       <p className="card-desc">
         A real-time on-chain risk engine that analyzes credit profiles and autonomously decides whether to inject default insurance.

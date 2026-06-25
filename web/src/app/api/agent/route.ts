@@ -5,7 +5,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { members, currentRound, collateral, debts, history, targetMember } = body;
 
-    const apiKey = process.env.DEEPSEEK_API_KEY;
+    const apiKey = process.env.AI_API_KEY;
 
     if (!apiKey) {
       // Fallback: If no API key is provided, generate a deterministic mock response based on the member's history.
@@ -22,7 +22,7 @@ export async function POST(req: Request) {
         status,
         riskScore,
         bailoutAmount,
-        rationale: `[SIMULATED DECISION - Add DEEPSEEK_API_KEY in .env.local to use Live DeepSeek v4 Flash] ${rationale}`,
+        rationale: `[SIMULATED DECISION - Add AI_API_KEY in .env.local to use Live AI agent] ${rationale}`,
       });
     }
 
@@ -72,7 +72,7 @@ Return a JSON response in the following format:
 
     if (!response.ok) {
       const errText = await response.text();
-      return NextResponse.json({ error: `DeepSeek API returned error: ${errText}` }, { status: 500 });
+      return NextResponse.json({ error: `AI API returned error: ${errText}` }, { status: 500 });
     }
 
     const data = await response.json();
