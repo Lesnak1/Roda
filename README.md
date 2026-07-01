@@ -25,7 +25,8 @@ Traditional real-world ROSCAs (known as *tanda*, *susu*, *stokvel*, *gün*, or *
 1. **Trustless Escrow:** Contributions are held securely by the `SavingsCircle` smart contract, not in any personal bank account or multisig wallet.
 2. **Default Protection via Collateral:** Every participant locks one round of contribution as a security deposit upon joining. If a member defaults, the contract automatically tops up the pot using their locked collateral, ensuring the designated beneficiary is paid in full.
 3. **Onchain Reputation Indexing:** Contributions and defaults generate immutable blockchain events. Roda uses these events to construct trust and reputation scores directly from contract activity.
-4. **Arc Native Optimization:** Roda is built for Arc, Circle's EVM L1 where USDC is the native gas token, delivering sub-second finality and stablecoin-denominated transactions.
+4. **AI Liquidity Guardian (Circle Wallets Integration):** Features an autonomous server-side AI risk agent that monitors circle defaults. If a member defaults but maintains a high credit rating, the agent autonomously executes an on-chain bailout transfer using Circle's Developer-Controlled Wallets SDK to keep the cycle moving.
+5. **Arc Native Optimization:** Roda is built for Arc, Circle's EVM L1 where USDC is the native gas token, delivering sub-second finality and stablecoin-denominated transactions.
 
 ---
 
@@ -38,11 +39,16 @@ flowchart TD
     Circle[SavingsCircle Contract]
     USDC[ERC-20 USDC Contract]
     Rep[Roda Passport UI]
+    AIAgent[AI Risk Agent Backend]
 
     User -->|Deploys via| Factory
     User -->|Joins / Contributes / Claims| Circle
     Circle -->|Locks / Settles / Withholds| USDC
     Circle -->|Emits Events| Rep
+    
+    Circle -.->|1. Query State| AIAgent
+    AIAgent -->|2. Trigger MPC Bailout via Circle SDK| USDC
+    USDC -->|3. Escrow Refill| Circle
 ```
 
 ## Repository Structure
@@ -138,6 +144,10 @@ To deploy Roda to Vercel:
    - `NEXT_PUBLIC_FACTORY_ADDRESS` (deployed `CircleFactory` address)
    - `NEXT_PUBLIC_USDC_ADDRESS` (`0x3600000000000000000000000000000000000000`)
    - `NEXT_PUBLIC_ARC_RPC_URL` (`https://rpc.testnet.arc.network`)
+   - `CIRCLE_API_KEY` (Circle Developer Wallets API Key)
+   - `CIRCLE_ENTITY_SECRET` (Circle entity secret hex string)
+   - `AI_AGENT_WALLET_ID` (Circle Developer-Controlled Wallet ID)
+   - `AI_API_KEY` (DeepSeek model API key)
 4. **Deploy:** Hit deploy. Vercel will automatically compile, optimize, and launch your dApp!
 
 ---
