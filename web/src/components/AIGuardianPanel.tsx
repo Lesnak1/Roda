@@ -151,13 +151,20 @@ export function AIGuardianPanel({
     setExecutingBailout(true);
     setBailoutHash(null);
     try {
-      // Simulate onchain execution by the Guardian Agent multi-sig
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-      // Generate a mock tx hash
-      const hash = `0x${Array.from({ length: 64 }, () =>
-        Math.floor(Math.random() * 16).toString(16)
-      ).join("")}`;
-      setBailoutHash(hash);
+      const response = await fetch("/api/bailout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          circleAddress: address,
+          amount: BigInt(Math.round((riskData.bailoutAmount || 100) * 1000000)).toString(),
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok || data.error) {
+        throw new Error(data.error || "Bailout execution failed");
+      }
+      
+      setBailoutHash(data.txHash);
       
       // Update local state to simulate resolved debt
       const key = selectedMember.toLowerCase();
@@ -166,8 +173,9 @@ export function AIGuardianPanel({
         ...prev,
         [key]: prev[key] ? [...prev[key].slice(0, -1), "paid"] : ["paid"],
       }));
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
+      alert(e.message || "Failed to execute bailout");
     } finally {
       setExecutingBailout(false);
     }
