@@ -46,6 +46,9 @@ export default function AboutPage() {
             <Link href="/docs" className="nav-link">
               Docs
             </Link>
+            <a href="https://faucet.circle.com/" target="_blank" rel="noopener noreferrer" className="nav-link">
+              Faucet
+            </a>
             <ThemeToggle />
           </div>
         </div>

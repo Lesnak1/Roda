@@ -59,6 +59,9 @@ export default function DocsPage() {
             <Link href="/docs" className="nav-link active">
               Docs
             </Link>
+            <a href="https://faucet.circle.com/" target="_blank" rel="noopener noreferrer" className="nav-link">
+              Faucet
+            </a>
             <ThemeToggle />
           </div>
         </div>

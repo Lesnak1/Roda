@@ -54,6 +54,9 @@ export default function Home() {
             <Link href="/docs" className="nav-link">
               Docs
             </Link>
+            <a href="https://faucet.circle.com/" target="_blank" rel="noopener noreferrer" className="nav-link">
+              Faucet
+            </a>
             <span className="pill">
               <span className="live-dot" />
               Arc Testnet
