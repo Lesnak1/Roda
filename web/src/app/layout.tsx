@@ -46,6 +46,28 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body>
         <div className="bg-aurora" aria-hidden="true" />
+        <div className="roda-ring-container" aria-hidden="true">
+          {/* Primary orbital ring — large, top-right */}
+          <div className="roda-ring ring-1">
+            <div className="orbital-dot dot-1a"></div>
+            <div className="orbital-dot dot-1b"></div>
+          </div>
+          {/* Secondary ring — bottom-left */}
+          <div className="roda-ring ring-2">
+            <div className="orbital-dot dot-2a"></div>
+          </div>
+          {/* Tertiary ring — center-left, large */}
+          <div className="roda-ring ring-3">
+            <div className="orbital-dot dot-3a"></div>
+            <div className="orbital-dot dot-3b"></div>
+          </div>
+          {/* Accent ring — small, mid-right */}
+          <div className="roda-ring ring-4">
+            <div className="orbital-dot dot-4a"></div>
+          </div>
+          {/* Outermost ring — hero halo */}
+          <div className="roda-ring ring-5"></div>
+        </div>
         <Providers>{children}</Providers>
       </body>
     </html>

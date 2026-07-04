@@ -89,7 +89,7 @@
   background: var(--accent);
 }
 
-html, body {
+html {
   margin: 0;
   padding: 0;
   background: var(--bg);
@@ -101,9 +101,14 @@ html, body {
 }
 
 body {
+  margin: 0;
+  padding: 0;
   min-height: 100vh;
   position: relative;
   overflow-x: hidden;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
 }
 
 /* Ambient aurora background */
@@ -141,6 +146,279 @@ body {
 @keyframes drift {
   0% { transform: translate3d(0, 0, 0) scale(1); }
   100% { transform: translate3d(0, -3%, 0) scale(1.06); }
+}
+
+/* ============================================
+   Premium Rotating Roda Rings — Orbital System
+   ============================================ */
+.roda-ring-container {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.roda-ring {
+  position: absolute;
+  border-radius: 50%;
+  will-change: transform;
+}
+
+/* --- Gradient arc technique: use a conic-gradient mask --- */
+
+/* Ring 1 — Primary, top-right, 700px */
+.ring-1 {
+  width: 700px;
+  height: 700px;
+  top: -180px;
+  right: -120px;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0%,
+    rgba(99, 102, 241, 0.28) 15%,
+    transparent 35%,
+    transparent 50%,
+    rgba(139, 92, 246, 0.18) 65%,
+    transparent 85%
+  );
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px) calc(100%), transparent 100%);
+          mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px) calc(100%), transparent 100%);
+  animation: rotate-clockwise 55s linear infinite;
+  filter: blur(0.5px);
+}
+
+/* Ring 2 — Secondary, bottom-left, 520px */
+.ring-2 {
+  width: 520px;
+  height: 520px;
+  bottom: -100px;
+  left: -60px;
+  background: conic-gradient(
+    from 120deg,
+    transparent 0%,
+    rgba(6, 182, 212, 0.25) 20%,
+    transparent 40%,
+    transparent 55%,
+    rgba(99, 102, 241, 0.15) 75%,
+    transparent 95%
+  );
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 1.5px), #000 calc(100% - 1.5px) calc(100%), transparent 100%);
+          mask: radial-gradient(farthest-side, transparent calc(100% - 1.5px), #000 calc(100% - 1.5px) calc(100%), transparent 100%);
+  animation: rotate-counter-clockwise 40s linear infinite;
+  filter: blur(0.3px);
+}
+
+/* Ring 3 — Large orbit, center-left, 950px */
+.ring-3 {
+  width: 950px;
+  height: 950px;
+  top: 20%;
+  left: -180px;
+  background: conic-gradient(
+    from 200deg,
+    transparent 0%,
+    rgba(139, 92, 246, 0.15) 10%,
+    transparent 25%,
+    transparent 50%,
+    rgba(6, 182, 212, 0.10) 60%,
+    transparent 75%
+  );
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 1.5px), #000 calc(100% - 1.5px) calc(100%), transparent 100%);
+          mask: radial-gradient(farthest-side, transparent calc(100% - 1.5px), #000 calc(100% - 1.5px) calc(100%), transparent 100%);
+  animation: rotate-clockwise 80s linear infinite;
+  filter: blur(0.5px);
+}
+
+/* Ring 4 — Small accent, mid-right, 320px */
+.ring-4 {
+  width: 320px;
+  height: 320px;
+  top: 35%;
+  right: -40px;
+  background: conic-gradient(
+    from 60deg,
+    transparent 0%,
+    rgba(99, 102, 241, 0.30) 12%,
+    transparent 30%,
+    transparent 60%,
+    rgba(139, 92, 246, 0.20) 72%,
+    transparent 90%
+  );
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 1.5px), #000 calc(100% - 1.5px) calc(100%), transparent 100%);
+          mask: radial-gradient(farthest-side, transparent calc(100% - 1.5px), #000 calc(100% - 1.5px) calc(100%), transparent 100%);
+  animation: rotate-counter-clockwise 35s linear infinite;
+  filter: blur(0.3px);
+}
+
+/* Ring 5 — Hero halo behind title, 600px */
+.ring-5 {
+  width: 600px;
+  height: 600px;
+  top: 5%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 1px solid rgba(99, 102, 241, 0.08);
+  box-shadow: 0 0 80px rgba(99, 102, 241, 0.04), inset 0 0 80px rgba(139, 92, 246, 0.02);
+  animation: ring-breathe 8s ease-in-out infinite;
+}
+
+/* ---- Orbital Dots (participants on the circle) ---- */
+.orbital-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  animation: dot-pulse 3s ease-in-out infinite;
+}
+
+/* Ring 1 dots */
+.dot-1a {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(99, 102, 241, 0.7);
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.5), 0 0 30px rgba(99, 102, 241, 0.2);
+}
+.dot-1b {
+  bottom: 15%;
+  left: 3%;
+  background: rgba(139, 92, 246, 0.6);
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.4), 0 0 30px rgba(139, 92, 246, 0.15);
+  animation-delay: -1.5s;
+}
+
+/* Ring 2 dots */
+.dot-2a {
+  top: 10%;
+  right: 5%;
+  background: rgba(6, 182, 212, 0.7);
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.5), 0 0 30px rgba(6, 182, 212, 0.2);
+  animation-delay: -0.8s;
+}
+
+/* Ring 3 dots */
+.dot-3a {
+  top: 5%;
+  right: 20%;
+  width: 5px;
+  height: 5px;
+  background: rgba(139, 92, 246, 0.6);
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.4), 0 0 25px rgba(139, 92, 246, 0.15);
+  animation-delay: -2s;
+}
+.dot-3b {
+  bottom: 8%;
+  left: 25%;
+  width: 4px;
+  height: 4px;
+  background: rgba(6, 182, 212, 0.5);
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.3), 0 0 20px rgba(6, 182, 212, 0.1);
+  animation-delay: -1s;
+}
+
+/* Ring 4 dots */
+.dot-4a {
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  width: 5px;
+  height: 5px;
+  background: rgba(99, 102, 241, 0.65);
+  box-shadow: 0 0 10px rgba(99, 102, 241, 0.45), 0 0 25px rgba(99, 102, 241, 0.15);
+  animation-delay: -0.5s;
+}
+
+/* ---- Light Mode ---- */
+[data-theme="light"] .ring-1 {
+  background: conic-gradient(
+    from 0deg,
+    transparent 0%,
+    rgba(79, 70, 229, 0.18) 15%,
+    transparent 35%,
+    transparent 50%,
+    rgba(124, 58, 237, 0.12) 65%,
+    transparent 85%
+  );
+}
+[data-theme="light"] .ring-2 {
+  background: conic-gradient(
+    from 120deg,
+    transparent 0%,
+    rgba(8, 145, 178, 0.16) 20%,
+    transparent 40%,
+    transparent 55%,
+    rgba(79, 70, 229, 0.10) 75%,
+    transparent 95%
+  );
+}
+[data-theme="light"] .ring-3 {
+  background: conic-gradient(
+    from 200deg,
+    transparent 0%,
+    rgba(124, 58, 237, 0.10) 10%,
+    transparent 25%,
+    transparent 50%,
+    rgba(8, 145, 178, 0.06) 60%,
+    transparent 75%
+  );
+}
+[data-theme="light"] .ring-4 {
+  background: conic-gradient(
+    from 60deg,
+    transparent 0%,
+    rgba(79, 70, 229, 0.20) 12%,
+    transparent 30%,
+    transparent 60%,
+    rgba(124, 58, 237, 0.12) 72%,
+    transparent 90%
+  );
+}
+[data-theme="light"] .ring-5 {
+  border-color: rgba(79, 70, 229, 0.06);
+  box-shadow: 0 0 60px rgba(79, 70, 229, 0.03);
+}
+[data-theme="light"] .dot-1a {
+  background: rgba(79, 70, 229, 0.5);
+  box-shadow: 0 0 10px rgba(79, 70, 229, 0.3);
+}
+[data-theme="light"] .dot-1b {
+  background: rgba(124, 58, 237, 0.4);
+  box-shadow: 0 0 10px rgba(124, 58, 237, 0.25);
+}
+[data-theme="light"] .dot-2a {
+  background: rgba(8, 145, 178, 0.5);
+  box-shadow: 0 0 10px rgba(8, 145, 178, 0.3);
+}
+[data-theme="light"] .dot-3a,
+[data-theme="light"] .dot-3b {
+  background: rgba(124, 58, 237, 0.35);
+  box-shadow: 0 0 8px rgba(124, 58, 237, 0.2);
+}
+[data-theme="light"] .dot-4a {
+  background: rgba(79, 70, 229, 0.45);
+  box-shadow: 0 0 8px rgba(79, 70, 229, 0.25);
+}
+
+/* ---- Keyframes ---- */
+@keyframes rotate-clockwise {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes rotate-counter-clockwise {
+  from { transform: rotate(360deg); }
+  to   { transform: rotate(0deg); }
+}
+
+@keyframes ring-breathe {
+  0%, 100% { opacity: 0.4; transform: translateX(-50%) scale(1); }
+  50%      { opacity: 0.7; transform: translateX(-50%) scale(1.04); }
+}
+
+@keyframes dot-pulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.6); }
 }
 
 a {
