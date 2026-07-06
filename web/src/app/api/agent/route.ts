@@ -92,6 +92,81 @@ Return a JSON response in the following format:
     const bailoutAmount = Number(result.bailoutAmount ?? result.bailout_amount ?? 0);
     const rationale = result.rationale ?? "No rationale provided by agent.";
 
+    // ERC-8004 Reputation Registry Integration
+    try {
+      const circleApiKey = process.env.CIRCLE_API_KEY;
+      const entitySecret = process.env.CIRCLE_ENTITY_SECRET;
+      const ownerWalletId = process.env.AI_AGENT_WALLET_ID;
+      const validatorWalletId = process.env.AI_AGENT_VALIDATOR_WALLET_ID;
+
+      if (circleApiKey && entitySecret && ownerWalletId && validatorWalletId) {
+        const { initiateDeveloperControlledWalletsClient } = await import("@circle-fin/developer-controlled-wallets");
+        const { createPublicClient, http, parseAbiItem, keccak256, toHex } = await import("viem");
+        const { arcTestnet } = await import("viem/chains");
+        const { IDENTITY_REGISTRY, REPUTATION_REGISTRY } = await import("@/lib/contracts");
+
+        const circleClient = initiateDeveloperControlledWalletsClient({
+          apiKey: circleApiKey,
+          entitySecret,
+        });
+
+        // 1. Get addresses
+        const ownerResponse = await circleClient.getWallet({ id: ownerWalletId });
+        const validatorResponse = await circleClient.getWallet({ id: validatorWalletId });
+        const ownerAddress = ownerResponse.data?.wallet?.address;
+        const validatorAddress = validatorResponse.data?.wallet?.address;
+
+        if (ownerAddress && validatorAddress) {
+          const publicClient = createPublicClient({
+            chain: arcTestnet,
+            transport: http(),
+          });
+
+          // 2. Query Transfer events to find Agent ID
+          const transferLogs = await publicClient.getLogs({
+            address: IDENTITY_REGISTRY,
+            event: parseAbiItem(
+              "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)"
+            ),
+            args: { to: ownerAddress as `0x${string}` },
+            fromBlock: 0n,
+            toBlock: "latest",
+          });
+
+          if (transferLogs.length > 0) {
+            const agentId = transferLogs[transferLogs.length - 1].args.tokenId!.toString();
+            const tag = "risk_assessment";
+            const feedbackHash = keccak256(toHex(tag));
+            const score = status.toUpperCase() === "APPROVED" ? 95 : 90;
+
+            // 3. validator submits giveFeedback for agent
+            await circleClient.createContractExecutionTransaction({
+              walletAddress: validatorAddress,
+              blockchain: "ARC-TESTNET",
+              contractAddress: REPUTATION_REGISTRY,
+              abiFunctionSignature: "giveFeedback(uint256,int128,uint8,string,string,string,string,bytes32)",
+              abiParameters: [
+                agentId,
+                score.toString(),
+                "0",
+                tag,
+                "", // metadataURI
+                "", // evidenceURI
+                rationale.slice(0, 100), // comment (keep it under 100 chars for transaction payload efficiency)
+                feedbackHash
+              ],
+              fee: { type: "level", config: { feeLevel: "MEDIUM" } }
+            });
+            console.log(`Successfully submitted ERC-8004 reputation feedback for agent ${agentId} on-chain.`);
+          }
+        }
+      } else {
+        console.log("Simulating reputation logging (Circle credentials not fully configured in env).");
+      }
+    } catch (repErr) {
+      console.error("Failed to log ERC-8004 reputation feedback on-chain:", repErr);
+    }
+
     return NextResponse.json({
       status: status.toUpperCase() === "APPROVED" ? "APPROVED" : "REJECTED",
       riskScore,

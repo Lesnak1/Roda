@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { usePublicClient, useAccount } from "wagmi";
 import { circleAbi, multicallSafe } from "@/lib/contracts";
 import { formatUsdc, shortAddr } from "@/lib/format";
-import { Brain, Cpu, ShieldCheck, AlertCircle, RefreshCw, CheckCircle2, XCircle, Zap } from "lucide-react";
+import { Brain, Cpu, ShieldCheck, AlertCircle, RefreshCw, CheckCircle2, XCircle, Zap, Award, Activity, Fingerprint } from "lucide-react";
 
 export function AIGuardianPanel({
   address,
@@ -31,6 +31,51 @@ export function AIGuardianPanel({
   const [debts, setDebts] = useState<Record<string, number>>({});
   const [histories, setHistories] = useState<Record<string, string[]>>({});
   const [loadingData, setLoadingData] = useState(false);
+
+  // ERC-8004 Identity states
+  const [identityData, setIdentityData] = useState<any>(null);
+  const [loadingIdentity, setLoadingIdentity] = useState(false);
+  const [registering, setRegistering] = useState(false);
+  const [regHash, setRegHash] = useState<string | null>(null);
+
+  async function fetchIdentity() {
+    setLoadingIdentity(true);
+    try {
+      const res = await fetch("/api/agent-identity");
+      const data = await res.json();
+      if (res.ok && !data.error) {
+        setIdentityData(data);
+      }
+    } catch (e) {
+      console.error("Failed to load agent identity:", e);
+    } finally {
+      setLoadingIdentity(false);
+    }
+  }
+
+  async function registerAgent() {
+    setRegistering(true);
+    setRegHash(null);
+    try {
+      const res = await fetch("/api/agent-identity", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        alert(data.error || "Failed to register agent identity");
+      } else {
+        setRegHash(data.txHash);
+        await fetchIdentity(); // Reload status
+      }
+    } catch (e: any) {
+      console.error(e);
+      alert(e.message || "Failed to register agent identity");
+    } finally {
+      setRegistering(false);
+    }
+  }
+
+  useEffect(() => {
+    fetchIdentity();
+  }, []);
 
   async function fetchContractData() {
     if (!client || !members || members.length === 0) return;
@@ -137,6 +182,8 @@ export function AIGuardianPanel({
         setRiskError(data.error || "Failed to analyze risk");
       } else {
         setRiskData(data);
+        // Refresh identity to show the new reputation record on chain
+        setTimeout(() => fetchIdentity(), 3000);
       }
     } catch (e: any) {
       console.error(e);
@@ -191,6 +238,90 @@ export function AIGuardianPanel({
         A real-time on-chain risk engine that analyzes credit profiles and autonomously decides whether to inject default insurance.
       </p>
 
+      {/* Onchain ERC-8004 Agent Identity Section */}
+      <div style={identityContainer}>
+        {loadingIdentity ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--text-muted)" }}>
+            <span className="btn-spin" /> Fetching Agent identity registry on Arc...
+          </div>
+        ) : identityData?.registered ? (
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <Fingerprint size={16} style={{ color: "var(--accent)" }} />
+                <span style={{ fontWeight: 600, fontSize: 13, color: "var(--text)" }}>Onchain Identity Verified</span>
+              </div>
+              <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: "12px", backgroundColor: "rgba(99, 102, 241, 0.15)", color: "var(--accent)", fontWeight: 600 }}>
+                ERC-8004 Agent #{identityData.agentId}
+              </span>
+            </div>
+            
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12, marginTop: 12, borderTop: "1px solid var(--border)", paddingTop: 12 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <span style={{ fontSize: 10, color: "var(--muted)", fontWeight: 500 }}>REPUTATION SCORE</span>
+                <span style={{ fontSize: 16, fontWeight: 700, color: "var(--success)", display: "flex", alignItems: "center", gap: 4 }}>
+                  <Award size={16} /> {identityData.stats?.avgScore || 0}%
+                </span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <span style={{ fontSize: 10, color: "var(--muted)", fontWeight: 500 }}>ASSESSMENTS</span>
+                <span style={{ fontSize: 16, fontWeight: 700, color: "var(--text)", display: "flex", alignItems: "center", gap: 4 }}>
+                  <Activity size={16} /> {identityData.stats?.totalCount || 0} Total
+                </span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <span style={{ fontSize: 10, color: "var(--muted)", fontWeight: 500 }}>OWNER ADDRESS</span>
+                <span style={{ fontSize: 12, fontWeight: 500, fontFamily: "var(--font-mono)", color: "var(--text)" }}>
+                  {shortAddr(identityData.ownerAddress)}
+                </span>
+              </div>
+            </div>
+
+            {/* List of recent assessments logs */}
+            {identityData.stats?.feedbacks?.length > 0 && (
+              <div style={{ marginTop: 12, borderTop: "1px solid var(--border)", paddingTop: 10 }}>
+                <span style={{ fontSize: 11, color: "var(--muted)", fontWeight: 600, display: "block", marginBottom: 6 }}>Recent Evaluations Logging:</span>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: "120px", overflowY: "auto", paddingRight: 4 }}>
+                  {identityData.stats.feedbacks.map((f: any, idx: number) => (
+                    <div key={idx} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", backgroundColor: "rgba(255,255,255,0.01)", border: "1px solid var(--border)", borderRadius: "4px", padding: "6px 8px", fontSize: 11 }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 2, maxWidth: "70%" }}>
+                        <span style={{ color: "var(--text)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {f.comment}
+                        </span>
+                        <span style={{ color: "var(--muted)", fontSize: 9 }}>Tag: {f.tag}</span>
+                      </div>
+                      <span style={{ fontWeight: 700, color: f.score >= 90 ? "var(--success)" : "var(--warn)" }}>
+                        {f.score}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              <span style={{ fontSize: 12, color: "var(--text)" }}>Agent onchain identity is not registered.</span>
+              <span style={{ fontSize: 10, color: "var(--muted)" }}>Mint an ERC-8004 NFT on Arc to begin tracking default risk evaluation scores.</span>
+            </div>
+            <button className="btn sm" onClick={registerAgent} disabled={registering}>
+              {registering && <span className="btn-spin" />}
+              Register Agent
+            </button>
+          </div>
+        )}
+        
+        {regHash && (
+          <div className="alert ok" style={{ marginTop: 10, fontSize: 11 }}>
+            <CheckCircle2 size={14} />
+            <div>
+              Agent minted successfully! Transaction: <a href={`https://testnet.arcscan.app/tx/${regHash}`} target="_blank" rel="noreferrer" style={{ color: "var(--accent)", textDecoration: "underline" }}>{regHash.substring(0, 16)}...</a>
+            </div>
+          </div>
+        )}
+      </div>
+
       <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 14 }}>
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <label style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 500 }}>Select Member:</label>
@@ -230,7 +361,7 @@ export function AIGuardianPanel({
 
         {riskData && (
           <div style={reportContainer}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border-color)", paddingBottom: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border)", paddingBottom: 10 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <Cpu size={16} style={{ color: "var(--accent)" }} />
                 <span style={{ fontWeight: 700, fontSize: 13 }}>Guardian Decision</span>
@@ -315,11 +446,19 @@ export function AIGuardianPanel({
   );
 }
 
+const identityContainer: CSSProperties = {
+  backgroundColor: "var(--panel)",
+  border: "1px solid var(--border)",
+  borderRadius: "var(--r-md)",
+  padding: "16px",
+  marginTop: "14px",
+};
+
 const selectStyle: CSSProperties = {
-  backgroundColor: "var(--bg-card-hover)",
-  border: "1px solid var(--border-color)",
+  backgroundColor: "var(--panel-strong)",
+  border: "1px solid var(--border)",
   borderRadius: "6px",
-  color: "var(--text-color)",
+  color: "var(--text)",
   padding: "5px 10px",
   fontSize: "12px",
   outline: "none",
@@ -328,7 +467,7 @@ const selectStyle: CSSProperties = {
 
 const reportContainer: CSSProperties = {
   backgroundColor: "rgba(255, 255, 255, 0.02)",
-  border: "1px solid var(--border-color)",
+  border: "1px solid var(--border)",
   borderRadius: "8px",
   padding: "16px",
   marginTop: "10px",

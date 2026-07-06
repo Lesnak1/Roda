@@ -2,6 +2,8 @@ import { factoryAbi } from "./abi/factory";
 import { circleAbi } from "./abi/circle";
 import { erc20Abi } from "./abi/erc20";
 
+import { identityRegistryAbi, reputationRegistryAbi, validationRegistryAbi } from "./abi/erc8004";
+
 export const USDC_DECIMALS = 6; // ERC-20 USDC on Arc uses 6 decimals.
 
 export const FACTORY_ADDRESS = (process.env.NEXT_PUBLIC_FACTORY_ADDRESS ??
@@ -10,7 +12,11 @@ export const FACTORY_ADDRESS = (process.env.NEXT_PUBLIC_FACTORY_ADDRESS ??
 export const USDC_ADDRESS = (process.env.NEXT_PUBLIC_USDC_ADDRESS ??
   "0x3600000000000000000000000000000000000000") as `0x${string}`;
 
-export { factoryAbi, circleAbi, erc20Abi };
+export const IDENTITY_REGISTRY = "0x8004A818BFB912233c491871b3d84c89A494BD9e" as `0x${string}`;
+export const REPUTATION_REGISTRY = "0x8004B663056A597Dffe9eCcC1965A193B7388713" as `0x${string}`;
+export const VALIDATION_REGISTRY = "0x8004Cb1BF31DAf7788923b405b754f57acEB4272" as `0x${string}`;
+
+export { factoryAbi, circleAbi, erc20Abi, identityRegistryAbi, reputationRegistryAbi, validationRegistryAbi };
 
 export const CircleState = {
   Recruiting: 0,
