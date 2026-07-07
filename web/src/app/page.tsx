@@ -51,6 +51,9 @@ export default function Home() {
             <Link href="/about" className="nav-link">
               About
             </Link>
+            <Link href="/how-to" className="nav-link">
+              How to Use
+            </Link>
             <Link href="/docs" className="nav-link">
               Docs
             </Link>
@@ -177,7 +180,10 @@ export default function Home() {
         <div className="footer-links">
           <Link href="/" className="footer-link">Dashboard</Link>
           <Link href="/about" className="footer-link">About</Link>
+          <Link href="/how-to" className="footer-link">How to Use</Link>
           <Link href="/docs" className="footer-link">Docs</Link>
+          <Link href="/terms" className="footer-link">Terms</Link>
+          <Link href="/privacy" className="footer-link">Privacy</Link>
         </div>
       </footer>
     </div>

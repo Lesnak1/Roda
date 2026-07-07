@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, Landmark, RefreshCw, ShieldAlert, Award } from "lucide-react";
+import { ArrowLeft, Landmark, RefreshCw, ShieldAlert, Award, Brain } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const containerVariants = {
@@ -42,6 +42,9 @@ export default function AboutPage() {
           <div className="topbar-right">
             <Link href="/about" className="nav-link active">
               About
+            </Link>
+            <Link href="/how-to" className="nav-link">
+              How to Use
             </Link>
             <Link href="/docs" className="nav-link">
               Docs
@@ -132,6 +135,16 @@ export default function AboutPage() {
                   historically across different savings circles.
                 </p>
               </motion.div>
+
+              <motion.div variants={itemVariants} className="about-card">
+                <h3>
+                  <Brain className="grad-text" size={24} />
+                  AI Liquidity Guardian
+                </h3>
+                <p>
+                  To further mitigate pool insolvency and protect member credit scores, Roda integrates the **AI Liquidity Guardian**. This agentic risk engine continuously monitors circle solvency. In the event of a member default, the AI Guardian can execute an automated liquidity injection on-chain using Circle's Developer-Controlled Wallets to cover the outstanding balance. The agent operates under a verified **ERC-8004 on-chain identity** with verifiable reputation scores, demonstrating the power of the Agentic Economy on Arc L1.
+                </p>
+              </motion.div>
             </div>
 
             <motion.div variants={itemVariants} className="card">
@@ -192,7 +205,10 @@ export default function AboutPage() {
         <div className="footer-links">
           <Link href="/" className="footer-link">Dashboard</Link>
           <Link href="/about" className="footer-link">About</Link>
+          <Link href="/how-to" className="footer-link">How to Use</Link>
           <Link href="/docs" className="footer-link">Docs</Link>
+          <Link href="/terms" className="footer-link">Terms</Link>
+          <Link href="/privacy" className="footer-link">Privacy</Link>
         </div>
       </footer>
     </div>
