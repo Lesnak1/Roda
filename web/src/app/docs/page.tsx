@@ -29,7 +29,7 @@ const itemVariants = {
   },
 } as const;
 
-type Section = "quickstart" | "architecture" | "decimals" | "contracts";
+type Section = "quickstart" | "architecture" | "guardian" | "decimals" | "contracts";
 
 export default function DocsPage() {
   const [activeSection, setActiveSection] = useState<Section>("quickstart");
@@ -111,6 +111,13 @@ export default function DocsPage() {
                     Architecture
                   </button>
                   <button
+                    onClick={() => scrollTo("guardian")}
+                    className={`docs-nav-link ${activeSection === "guardian" ? "active" : ""}`}
+                  >
+                    <ShieldAlert size={16} style={{ marginRight: 8, verticalAlign: "-2px" }} />
+                    AI Guardian & ERC-8004
+                  </button>
+                  <button
                     onClick={() => scrollTo("decimals")}
                     className={`docs-nav-link ${activeSection === "decimals" ? "active" : ""}`}
                   >
@@ -158,6 +165,7 @@ export default function DocsPage() {
                         <li>All members call <code>contribute()</code> to pay their share.</li>
                         <li>Once paid, or if the deadline passes, anyone can call <code>closeRound()</code> to advance.</li>
                         <li>The designated round beneficiary claims the collected pot using <code>claimPayout()</code>.</li>
+                        <li>If a member is at risk of defaulting, the <strong>AI Liquidity Guardian</strong> can trigger a bailout.</li>
                       </ul>
                     </li>
                     <li>
@@ -184,6 +192,45 @@ export default function DocsPage() {
                   <p>
                     <strong>Collateral Protection:</strong> When joining a circle, members must escrow an amount exactly equal to one round's contribution. If a member fails to contribute by the round's deadline, <code>closeRound()</code> automatically recovers their missing payment by burning a portion of their locked collateral. This guarantees the beneficiary always receives the full payout.
                   </p>
+                </motion.section>
+
+                {/* AI Guardian & ERC-8004 Section */}
+                <motion.section
+                  id="guardian"
+                  variants={itemVariants}
+                  className="docs-section"
+                >
+                  <h2>AI Liquidity Guardian & ERC-8004</h2>
+                  <p>
+                    Roda integrates autonomous agent automation with verified on-chain identities to secure collaborative saving pools.
+                  </p>
+                  
+                  <h3 style={{ fontSize: "17px", fontWeight: "700", marginTop: "14px" }}>1. Autonomous Credit Protection</h3>
+                  <p>
+                    The <strong>AI Liquidity Guardian</strong> acts as an on-chain automated risk engine. When a member is in danger of defaulting, the Guardian can autonomously decide to perform a liquidity bailout:
+                  </p>
+                  <ul>
+                    <li>The Guardian assesses the member's collateral, debt, and payment history using DeepSeek AI.</li>
+                    <li>If approved, the Guardian's <strong>Circle Developer-Controlled Wallet</strong> automatically signs and broadcasts transactions to execute the bailout on Arc Testnet, keeping the savings circle liquid.</li>
+                  </ul>
+
+                  <h3 style={{ fontSize: "17px", fontWeight: "700", marginTop: "14px" }}>2. ERC-8004 Agent Identity & Reputation</h3>
+                  <p>
+                    To ensure trustless execution, the AI Guardian is registered as an on-chain identity using the <strong>ERC-8004 standard</strong>:
+                  </p>
+                  <ul>
+                    <li>The agent is minted as an identity NFT on Arc's <code>IdentityRegistry</code>.</li>
+                    <li>Following each credit assessment, a validator wallet submits a <code>giveFeedback</code> rating to the on-chain <code>ReputationRegistry</code>.</li>
+                    <li>The overall reputation score and historical assessments are calculated directly from on-chain logs.</li>
+                  </ul>
+
+                  <h3 style={{ fontSize: "17px", fontWeight: "700", marginTop: "14px" }}>How to Test the Guardian:</h3>
+                  <ol>
+                    <li>Enter any active circle dashboard and locate the <strong>AI Liquidity Guardian</strong> panel.</li>
+                    <li>Verify the agent's on-chain status under the <strong>Onchain Identity Verified</strong> widget.</li>
+                    <li>Select a member from the dropdown list and click <strong>Analyze Risk</strong> to fetch a real-time risk profile and AI rationale.</li>
+                    <li>If approved, click <strong>Execute Automated Injection</strong> to trigger the live Circle-powered transaction.</li>
+                  </ol>
                 </motion.section>
 
                 {/* Decimals Section */}
