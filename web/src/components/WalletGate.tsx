@@ -6,9 +6,15 @@ import { LogOut, Wallet, Globe, AlertCircle, Droplets } from "lucide-react";
 import { arcTestnet, ARC_FAUCET_URL } from "@/lib/chains/arcTestnet";
 import { USDC_ADDRESS, erc20Abi } from "@/lib/contracts";
 import { formatGasUsdc, formatUsdc, shortAddr } from "@/lib/format";
-import type { ReactNode } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 
 export function WalletGate({ children }: { children: ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const { address, isConnected, chainId } = useAccount();
   const { connect, connectors, isPending } = useConnect();
   const { disconnect } = useDisconnect();
@@ -31,7 +37,7 @@ export function WalletGate({ children }: { children: ReactNode }) {
     query: { enabled: Boolean(address) && onArc },
   });
 
-  if (!isConnected) {
+  if (!mounted || !isConnected) {
     const injectedConnector = connectors.find((c) => c.type === "injected") ?? connectors[0];
     return (
       <motion.div
@@ -46,7 +52,7 @@ export function WalletGate({ children }: { children: ReactNode }) {
         <p className="card-desc">Connect an EVM wallet (e.g. MetaMask) to use Roda.</p>
         <button
           className="btn"
-          disabled={isPending}
+          disabled={!mounted || isPending}
           onClick={() => injectedConnector && connect({ connector: injectedConnector })}
           style={{ display: "inline-flex", alignItems: "center", gap: 8, margin: "0 auto" }}
         >

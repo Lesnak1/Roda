@@ -92,6 +92,13 @@ export const circleAbi = [
   },
   {
     type: "function",
+    name: "memberDebt",
+    stateMutability: "view",
+    inputs: [{ name: "", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
     name: "hasContributed",
     stateMutability: "view",
     inputs: [

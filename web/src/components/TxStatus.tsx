@@ -7,17 +7,30 @@ type Props = {
   isPending: boolean;
   isConfirming: boolean;
   isConfirmed: boolean;
+  isReverted?: boolean;
   error?: Error | null;
 };
 
-// Full transaction lifecycle: pending -> confirming -> success (with explorer
-// link) / failed. Mirrors the Arc guide UX checklist.
-export function TxStatus({ hash, isPending, isConfirming, isConfirmed, error }: Props) {
+// Full transaction lifecycle: pending -> confirming -> success / reverted / failed.
+export function TxStatus({ hash, isPending, isConfirming, isConfirmed, isReverted, error }: Props) {
   if (error) {
     return (
       <div className="alert err">
         <span className="ai">✕</span>
         <span>Transaction failed: {error.message.split("\n")[0]}</span>
+      </div>
+    );
+  }
+  if (isReverted && hash) {
+    return (
+      <div className="alert err">
+        <span className="ai">✕</span>
+        <span>
+          Transaction reverted on-chain.{" "}
+          <a href={explorerTx(hash)} target="_blank" rel="noreferrer">
+            View on explorer
+          </a>
+        </span>
       </div>
     );
   }
@@ -34,7 +47,7 @@ export function TxStatus({ hash, isPending, isConfirming, isConfirmed, error }: 
       <div className="alert warn">
         <span className="btn-spin" />
         <span>
-          Transaction sent, waiting for finality…{" "}
+          Transaction sent, waiting for confirmation…{" "}
           {hash && (
             <a href={explorerTx(hash)} target="_blank" rel="noreferrer">
               View on explorer
@@ -44,12 +57,12 @@ export function TxStatus({ hash, isPending, isConfirming, isConfirmed, error }: 
       </div>
     );
   }
-  if (isConfirmed && hash) {
+  if (isConfirmed && hash && !isReverted) {
     return (
       <div className="alert ok">
         <span className="ai">✓</span>
         <span>
-          Confirmed · sub-second finality.{" "}
+          Transaction confirmed.{" "}
           <a href={explorerTx(hash)} target="_blank" rel="noreferrer">
             View on explorer
           </a>

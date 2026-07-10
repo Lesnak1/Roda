@@ -1,49 +1,110 @@
 import { NextResponse } from "next/server";
+import { createPublicClient, http, parseAbiItem, keccak256, toHex } from "viem";
+import { arcTestnet } from "viem/chains";
+import { IDENTITY_REGISTRY, REPUTATION_REGISTRY } from "@/lib/contracts";
+
+// Minimal ABI for server-side on-chain reads
+const circleReadAbi = [
+  { type: "function", name: "state", stateMutability: "view", inputs: [], outputs: [{ type: "uint8" }] },
+  { type: "function", name: "contributionAmount", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
+  { type: "function", name: "currentRound", stateMutability: "view", inputs: [], outputs: [{ type: "uint256" }] },
+  { type: "function", name: "memberList", stateMutability: "view", inputs: [], outputs: [{ type: "address[]" }] },
+  { type: "function", name: "memberCount", stateMutability: "view", inputs: [], outputs: [{ type: "uint8" }] },
+  { type: "function", name: "isMember", stateMutability: "view", inputs: [{ type: "address" }], outputs: [{ type: "bool" }] },
+  { type: "function", name: "collateral", stateMutability: "view", inputs: [{ type: "address" }], outputs: [{ type: "uint256" }] },
+  { type: "function", name: "memberDebt", stateMutability: "view", inputs: [{ type: "address" }], outputs: [{ type: "uint256" }] },
+  { type: "function", name: "hasContributed", stateMutability: "view", inputs: [{ type: "uint256" }, { type: "address" }], outputs: [{ type: "bool" }] },
+  { type: "function", name: "roundClosed", stateMutability: "view", inputs: [{ type: "uint256" }], outputs: [{ type: "bool" }] },
+] as const;
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { members, currentRound, collateral, debts, history, targetMember } = body;
+    // Only accept identifiers — all financial data is read server-side
+    const { circleAddress, targetMember } = body;
+
+    if (!circleAddress || !targetMember) {
+      return NextResponse.json({ error: "Missing circleAddress or targetMember" }, { status: 400 });
+    }
 
     const apiKey = process.env.AI_API_KEY;
-
     if (!apiKey) {
-      // Fallback: If no API key is provided, generate a deterministic mock response based on the member's history.
-      // This ensures the dApp remains fully functional for hackathon reviewers without credentials.
-      const hasDefaults = history[targetMember]?.includes("defaulted") || debts[targetMember] > 0;
-      const riskScore = hasDefaults ? 85 : 15;
-      const status = hasDefaults ? "REJECTED" : "APPROVED";
-      const bailoutAmount = status === "APPROVED" ? 100 : 0;
-      const rationale = hasDefaults
-        ? `Member has a record of defaults (${debts[targetMember]} USDC outstanding debt) and zero collateral. Liquidity injection rejected to mitigate credit risk.`
-        : `Member has a flawless payment history and maintains sufficient collateral. Approved for an automated 100 USDC liquidity guarantee to prevent temporary round friction.`;
-
-      return NextResponse.json({
-        status,
-        riskScore,
-        bailoutAmount,
-        rationale: `[SIMULATED DECISION - Add AI_API_KEY in .env.local to use Live AI agent] ${rationale}`,
-      });
+      return NextResponse.json({ error: "AI_API_KEY is not configured" }, { status: 500 });
     }
+
+    // --- Server-side on-chain data reading ---
+    const publicClient = createPublicClient({
+      chain: arcTestnet,
+      transport: http(),
+    });
+
+    // Read circle state
+    const [state, currentRound, members, contributionAmount] = await Promise.all([
+      publicClient.readContract({ address: circleAddress, abi: circleReadAbi, functionName: "state" }),
+      publicClient.readContract({ address: circleAddress, abi: circleReadAbi, functionName: "currentRound" }),
+      publicClient.readContract({ address: circleAddress, abi: circleReadAbi, functionName: "memberList" }),
+      publicClient.readContract({ address: circleAddress, abi: circleReadAbi, functionName: "contributionAmount" }),
+    ]);
+
+    // Verify target is a member
+    const isMember = await publicClient.readContract({
+      address: circleAddress,
+      abi: circleReadAbi,
+      functionName: "isMember",
+      args: [targetMember as `0x${string}`],
+    });
+
+    if (!isMember) {
+      return NextResponse.json({ error: "Target is not a member of this circle" }, { status: 400 });
+    }
+
+    // Read collateral and debt for target member
+    const [targetCollateral, targetDebt] = await Promise.all([
+      publicClient.readContract({ address: circleAddress, abi: circleReadAbi, functionName: "collateral", args: [targetMember as `0x${string}`] }),
+      publicClient.readContract({ address: circleAddress, abi: circleReadAbi, functionName: "memberDebt", args: [targetMember as `0x${string}`] }).catch(() => 0n),
+    ]);
+
+    // Read payment history for target member across all rounds
+    const memberCount = Number(await publicClient.readContract({ address: circleAddress, abi: circleReadAbi, functionName: "memberCount" }));
+    const historyRecords: string[] = [];
+    for (let r = 0; r < memberCount && r <= Number(currentRound); r++) {
+      try {
+        const closed = await publicClient.readContract({ address: circleAddress, abi: circleReadAbi, functionName: "roundClosed", args: [BigInt(r)] });
+        if (closed) {
+          const contributed = await publicClient.readContract({ address: circleAddress, abi: circleReadAbi, functionName: "hasContributed", args: [BigInt(r), targetMember as `0x${string}`] });
+          historyRecords.push(contributed ? "paid" : "defaulted");
+        }
+      } catch {
+        // Skip round if read fails
+      }
+    }
+
+    // Format data for AI prompt (all server-side sourced)
+    const collateralUsdc = Number(targetCollateral) / 1000000;
+    const debtUsdc = Number(targetDebt) / 1000000;
+    const contributionUsdc = Number(contributionAmount) / 1000000;
 
     const prompt = `You are Roda's AI Liquidity Guardian Agent. Your role is to assess credit and default risks for members of onchain savings circles on the Arc Network.
 You must analyze the historical payment behavior, collateral balances, and outstanding debts of the target member to determine if they qualify for an automated liquidity bailout/injection in the current round.
 
 Circle Configuration:
-- Current Round: ${currentRound}
-- Member List: ${JSON.stringify(members)}
+- Circle Address: ${circleAddress}
+- Circle State: ${Number(state) === 1 ? "Active" : "Not Active (state=" + state + ")"}
+- Current Round: ${Number(currentRound)}
+- Total Members: ${memberCount}
+- Contribution Amount per Round: ${contributionUsdc} USDC
 
 Target Member to Assess: ${targetMember}
-Target Member Current State:
-- Remaining Collateral: ${collateral[targetMember] ?? 0} USDC
-- Unpaid Debt: ${debts[targetMember] ?? 0} USDC
-- Historical payment records: ${JSON.stringify(history[targetMember] ?? [])}
+Target Member Current State (server-verified on-chain data):
+- Remaining Collateral: ${collateralUsdc} USDC
+- Unpaid Debt: ${debtUsdc} USDC
+- Historical payment records: ${JSON.stringify(historyRecords)}
 
 Return a JSON response in the following format:
 {
   "status": "APPROVED" | "REJECTED",
   "riskScore": <integer between 0 and 100>,
-  "bailoutAmount": <integer in USDC, 0 if rejected>,
+  "bailoutAmount": <must equal the contribution amount: ${contributionUsdc}>,
   "rationale": "<A professional, expert-level 2-3 sentence analysis of their risk profile, citing their payment history and why they were approved or rejected for the liquidity injection. Do not sound like AI, write like an expert onchain risk manager.>"
 }`;
 
@@ -86,13 +147,14 @@ Return a JSON response in the following format:
       throw new Error("AI returned invalid JSON structure.");
     }
 
-    // Normalize keys (handle camelCase vs snake_case, ensure types)
+    // Normalize keys and enforce contribution amount as bailout
     const status = result.status ?? (Number(result.riskScore ?? result.risk_score ?? 50) > 50 ? "REJECTED" : "APPROVED");
     const riskScore = Number(result.riskScore ?? result.risk_score ?? 50);
-    const bailoutAmount = Number(result.bailoutAmount ?? result.bailout_amount ?? 0);
+    const bailoutAmount = status.toUpperCase() === "APPROVED" ? contributionUsdc : 0;
     const rationale = result.rationale ?? "No rationale provided by agent.";
 
     // ERC-8004 Reputation Registry Integration
+    let attestationSuccess = false;
     try {
       const circleApiKey = process.env.CIRCLE_API_KEY;
       const entitySecret = process.env.CIRCLE_ENTITY_SECRET;
@@ -101,9 +163,6 @@ Return a JSON response in the following format:
 
       if (circleApiKey && entitySecret && ownerWalletId && validatorWalletId) {
         const { initiateDeveloperControlledWalletsClient } = await import("@circle-fin/developer-controlled-wallets");
-        const { createPublicClient, http, parseAbiItem, keccak256, toHex } = await import("viem");
-        const { arcTestnet } = await import("viem/chains");
-        const { IDENTITY_REGISTRY, REPUTATION_REGISTRY } = await import("@/lib/contracts");
 
         const circleClient = initiateDeveloperControlledWalletsClient({
           apiKey: circleApiKey,
@@ -117,29 +176,38 @@ Return a JSON response in the following format:
         const validatorAddress = validatorResponse.data?.wallet?.address;
 
         if (ownerAddress && validatorAddress) {
-          const publicClient = createPublicClient({
-            chain: arcTestnet,
-            transport: http(),
-          });
+          const latestBlock = await publicClient.getBlockNumber();
+          const chunkSize = 9500n;
+          let agentId: string | null = null;
 
-          // 2. Query Transfer events to find Agent ID
-          const transferLogs = await publicClient.getLogs({
-            address: IDENTITY_REGISTRY,
-            event: parseAbiItem(
-              "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)"
-            ),
-            args: { to: ownerAddress as `0x${string}` },
-            fromBlock: 0n,
-            toBlock: "latest",
-          });
+          for (let i = 0; i < 5; i++) {
+            const toBlock = latestBlock - (BigInt(i) * chunkSize);
+            let chunkFromBlock = toBlock - chunkSize;
+            if (chunkFromBlock < 0n) chunkFromBlock = 0n;
 
-          if (transferLogs.length > 0) {
-            const agentId = transferLogs[transferLogs.length - 1].args.tokenId!.toString();
+            const logs = await publicClient.getLogs({
+              address: IDENTITY_REGISTRY,
+              event: parseAbiItem(
+                "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)"
+              ),
+              args: { to: ownerAddress as `0x${string}` },
+              fromBlock: chunkFromBlock,
+              toBlock,
+            });
+
+            if (logs.length > 0) {
+              agentId = logs[logs.length - 1].args.tokenId!.toString();
+              break;
+            }
+
+            if (chunkFromBlock === 0n) break;
+          }
+
+          if (agentId) {
             const tag = "risk_assessment";
             const feedbackHash = keccak256(toHex(tag));
             const score = status.toUpperCase() === "APPROVED" ? 95 : 90;
 
-            // 3. validator submits giveFeedback for agent
             await circleClient.createContractExecutionTransaction({
               walletAddress: validatorAddress,
               blockchain: "ARC-TESTNET",
@@ -150,18 +218,17 @@ Return a JSON response in the following format:
                 score.toString(),
                 "0",
                 tag,
-                "", // metadataURI
-                "", // evidenceURI
-                rationale.slice(0, 100), // comment (keep it under 100 chars for transaction payload efficiency)
+                "",
+                "",
+                rationale.slice(0, 100),
                 feedbackHash
               ],
               fee: { type: "level", config: { feeLevel: "MEDIUM" } }
             });
+            attestationSuccess = true;
             console.log(`Successfully submitted ERC-8004 reputation feedback for agent ${agentId} on-chain.`);
           }
         }
-      } else {
-        console.log("Simulating reputation logging (Circle credentials not fully configured in env).");
       }
     } catch (repErr) {
       console.error("Failed to log ERC-8004 reputation feedback on-chain:", repErr);
@@ -172,6 +239,8 @@ Return a JSON response in the following format:
       riskScore,
       bailoutAmount,
       rationale,
+      attestationSuccess,
+      serverVerified: true,
     });
   } catch (error: any) {
     console.error("Agent API error:", error);

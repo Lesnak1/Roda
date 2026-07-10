@@ -17,6 +17,7 @@ import { explorerAddress } from "@/lib/chains/arcTestnet";
 import { TxStatus } from "./TxStatus";
 import { ReputationPanel } from "./ReputationPanel";
 import { AIGuardianPanel } from "./AIGuardianPanel";
+import { IntegrationsPanel } from "./IntegrationsPanel";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -144,7 +145,8 @@ export function CircleDetail({
   });
 
   const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash });
+  const { isLoading: isConfirming, isSuccess: isConfirmed, data: receipt } = useWaitForTransactionReceipt({ hash });
+  const isReverted = isConfirmed && receipt?.status === "reverted";
 
   function refreshAll() {
     refetch();
@@ -437,7 +439,7 @@ export function CircleDetail({
           </div>
         )}
 
-        <TxStatus hash={hash} isPending={isPending} isConfirming={isConfirming} isConfirmed={isConfirmed} error={error} />
+        <TxStatus hash={hash} isPending={isPending} isConfirming={isConfirming} isConfirmed={isConfirmed && !isReverted} isReverted={isReverted} error={error} />
 
         <div style={gasWarningBox}>
           <ShieldCheck size={14} style={{ color: "var(--accent)", flexShrink: 0 }} />
@@ -457,6 +459,10 @@ export function CircleDetail({
 
       <motion.div variants={itemVariants}>
         <AIGuardianPanel address={address} members={members} currentRound={currentRound} />
+      </motion.div>
+
+      <motion.div variants={itemVariants}>
+        <IntegrationsPanel circleAddress={address} />
       </motion.div>
     </motion.div>
   );

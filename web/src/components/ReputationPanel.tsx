@@ -97,7 +97,7 @@ export function ReputationPanel({
         Roda Passport & Repayment Reputation
       </h3>
       <p className="card-desc">
-        A decentralized credit identity built on-chain. Each timely contribution builds your portable reputational credit, lowering future collateral requirements.
+        A decentralized credit identity built on-chain. Provides a portable summary of contribution history and repayment rates for members within this savings circle.
       </p>
 
       {loading && <div className="skeleton" style={skFull} />}

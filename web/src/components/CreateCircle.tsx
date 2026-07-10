@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useWaitForTransactionReceipt, useWriteContract } from "wagmi";
 import { Coins, Users, Calendar, Plus } from "lucide-react";
@@ -29,24 +29,48 @@ export function CreateCircle({ onCreated }: { onCreated: () => void }) {
   const [recruiting, setRecruiting] = useState(604800);
 
   const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({ hash });
+  const { isLoading: isConfirming, isSuccess: isConfirmed, data: receipt } = useWaitForTransactionReceipt({ hash });
+  const isReverted = isConfirmed && receipt?.status === "reverted";
+  const [formError, setFormError] = useState<string | null>(null);
 
   const amt = Number(amount) || 0;
   const pot = amt * members;
   const durLabel = DURATIONS.find((d) => d.value === duration)?.label ?? "";
 
   function submit() {
-    reset();
+    setFormError(null);
+    if (amt <= 0 || isNaN(amt)) {
+      setFormError("Contribution amount must be greater than 0.");
+      return;
+    }
+    if (members < 2 || members > 20) {
+      setFormError("Members must be between 2 and 20.");
+      return;
+    }
+    // Check for excessive decimals (USDC has 6 decimals)
+    const parts = amount.split(".");
+    if (parts.length > 1 && parts[1].length > 6) {
+      setFormError("USDC supports max 6 decimal places.");
+      return;
+    }
     writeContract(
       {
         address: FACTORY_ADDRESS,
         abi: factoryAbi,
         functionName: "createCircle",
         args: [parseUsdc(amount), members, BigInt(duration), BigInt(recruiting)],
-      },
-      { onSuccess: () => setTimeout(onCreated, 2500) }
+      }
     );
   }
+
+  useEffect(() => {
+    if (isConfirmed && !isReverted) {
+      const timer = setTimeout(() => {
+        onCreated();
+      }, 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [isConfirmed, isReverted, onCreated]);
 
   const busy = isPending || isConfirming;
 
@@ -175,11 +199,19 @@ export function CreateCircle({ onCreated }: { onCreated: () => void }) {
         </button>
       </div>
 
+      {formError && (
+        <div className="alert err" style={{ marginTop: 12 }}>
+          <span className="ai">✕</span>
+          <span>{formError}</span>
+        </div>
+      )}
+
       <TxStatus
         hash={hash}
         isPending={isPending}
         isConfirming={isConfirming}
-        isConfirmed={isConfirmed}
+        isConfirmed={isConfirmed && !isReverted}
+        isReverted={isReverted}
         error={error}
       />
     </div>

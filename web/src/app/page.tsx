@@ -81,7 +81,9 @@ export default function Home() {
                 transition={{ duration: 0.25 }}
                 style={detailWrap}
               >
-                <CircleDetail address={selected} onBack={() => setSelected(null)} />
+                <WalletGate>
+                  <CircleDetail address={selected} onBack={() => setSelected(null)} />
+                </WalletGate>
               </motion.div>
             ) : (
               <motion.div
