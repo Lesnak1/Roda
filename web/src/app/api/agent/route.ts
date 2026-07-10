@@ -3,6 +3,8 @@ import { createPublicClient, http, parseAbiItem, keccak256, toHex } from "viem";
 import { arcTestnet } from "viem/chains";
 import { IDENTITY_REGISTRY, REPUTATION_REGISTRY } from "@/lib/contracts";
 
+export const maxDuration = 60;
+
 // Minimal ABI for server-side on-chain reads
 const circleReadAbi = [
   { type: "function", name: "state", stateMutability: "view", inputs: [], outputs: [{ type: "uint8" }] },

@@ -6,6 +6,9 @@ import { arcTestnet } from "viem/chains";
 const USDC_ADDRESS = process.env.NEXT_PUBLIC_USDC_ADDRESS || "0x3600000000000000000000000000000000000000";
 const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS || "0x0000000000000000000000000000000000000000";
 
+// Set function timeout limit on Vercel (Hobby max 10s/60s depending on plan, Pro up to 300s)
+export const maxDuration = 60;
+
 // Minimal ABI for server-side on-chain reads
 const circleReadAbi = [
   { type: "function", name: "state", stateMutability: "view", inputs: [], outputs: [{ type: "uint8" }] },
