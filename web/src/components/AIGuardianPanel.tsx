@@ -135,9 +135,17 @@ export function AIGuardianPanel({
 
       const results = await multicallSafe(client, contracts);
 
-      // Verify no critical reads failed
-      const criticalFailures = results.slice(0, members.length * 2).filter((r: any) => r.status === "failure");
+      // Verify no critical reads failed (collateral is critical, memberDebt is not since older contracts don't have it)
+      const criticalFailures = results.slice(0, members.length * 2).reduce((acc: any[], r: any, idx: number) => {
+        const isCollateral = idx % 2 === 0;
+        if (isCollateral && r.status === "failure") {
+          acc.push({ index: idx, contract: contracts[idx], error: r.error });
+        }
+        return acc;
+      }, []);
+
       if (criticalFailures.length > 0) {
+        console.error("AIGuardianPanel critical failures:", criticalFailures);
         setDataError("Some on-chain reads failed. Data may be incomplete.");
       } else {
         setDataError(null);
@@ -363,7 +371,12 @@ export function AIGuardianPanel({
 
       {/* Onchain ERC-8004 Agent Identity Section */}
       <div style={identityContainer}>
-        {loadingIdentity ? (
+        {identityError ? (
+          <div className="alert err" style={{ margin: 0, fontSize: 12, display: "flex", alignItems: "center", gap: 8 }}>
+            <AlertCircle size={16} />
+            <span>Failed to query Agent identity: {identityError}</span>
+          </div>
+        ) : loadingIdentity ? (
           <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--text-muted)" }}>
             <span className="btn-spin" /> Fetching Agent identity registry on Arc...
           </div>
@@ -444,6 +457,13 @@ export function AIGuardianPanel({
           </div>
         )}
       </div>
+
+      {dataError && (
+        <div className="alert err" style={{ marginTop: 14 }}>
+          <AlertCircle size={16} />
+          <span>{dataError}</span>
+        </div>
+      )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 14 }}>
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>

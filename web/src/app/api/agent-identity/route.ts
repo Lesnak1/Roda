@@ -171,7 +171,7 @@ export async function POST() {
       await new Promise((r) => setTimeout(r, 2000));
       const { data } = await circleClient.getTransaction({ id: txId });
       if (data?.transaction?.state === "COMPLETE") {
-        txHash = data.transaction.txHash;
+        txHash = data?.transaction?.txHash;
         break;
       }
       if (data?.transaction?.state === "FAILED") {
