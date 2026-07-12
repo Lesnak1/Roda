@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Roda — Stablecoins Commerce Stack Challenge Submission</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+    
+    @page {
+      size: A4;
+      margin: 20mm;
+    }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      color: #1e293b;
+      line-height: 1.6;
+      font-size: 14px;
+      margin: 0;
+      padding: 0;
+      background-color: #ffffff;
+    }
+
+    @media print {
+      body {
+        background: #ffffff;
+        color: #000000;
+      }
+      .page-break {
+        page-break-before: always;
+      }
+      .no-print {
+        display: none;
+      }
+      a {
+        text-decoration: underline;
+        color: #000000;
+      }
+      a::after {
+        content: " (" attr(href) ")";
+        font-size: 85%;
+      }
+    }
+
+    h1, h2, h3, h4 {
+      color: #0f172a;
+      font-weight: 700;
+      margin-top: 1.5em;
+      margin-bottom: 0.5em;
+      page-break-after: avoid;
+      break-after: avoid;
+    }
+
+    h1 {
+      font-size: 26px;
+      letter-spacing: -0.03em;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 8px;
+    }
+
+    h2 {
+      font-size: 18px;
+      letter-spacing: -0.02em;
+      border-bottom: 1px solid #f1f5f9;
+      padding-bottom: 6px;
+      margin-top: 2em;
+    }
+
+    h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #4f46e5;
+    }
+
+    p {
+      margin-top: 0;
+      margin-bottom: 1.25em;
+    }
+
+    .title-page {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 250mm;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    .brand-container {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .logo-mark {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 55%, #06b6d4 120%);
+      position: relative;
+    }
+
+    .logo-mark::after {
+      content: "";
+      position: absolute;
+      inset: 10px;
+      border-radius: 50%;
+      border: 3px solid #ffffff;
+    }
+
+    .logo-text {
+      font-size: 42px;
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 55%, #0891b2 120%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .tagline {
+      font-size: 18px;
+      color: #64748b;
+      font-weight: 400;
+      margin-bottom: 48px;
+      max-width: 550px;
+    }
+
+    .meta-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 24px;
+      margin-bottom: 48px;
+    }
+
+    .meta-table td {
+      padding: 12px 16px;
+      border: 1px solid #e2e8f0;
+      font-size: 13px;
+    }
+
+    .meta-table td.label {
+      font-weight: 600;
+      background-color: #f8fafc;
+      width: 30%;
+      color: #334155;
+    }
+
+    .meta-table td.value {
+      font-family: 'JetBrains Mono', monospace;
+      color: #0f172a;
+    }
+
+    .flow-chart {
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      color: #334155;
+      overflow-x: auto;
+    }
+
+    ul, ol {
+      margin-top: 0;
+      margin-bottom: 1.5em;
+      padding-left: 20px;
+    }
+
+    li {
+      margin-bottom: 0.5em;
+    }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      background-color: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 90%;
+      color: #0f172a;
+    }
+
+    pre {
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 16px;
+      overflow-x: auto;
+      margin-top: 0;
+      margin-bottom: 1.5em;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+
+    pre code {
+      background-color: transparent;
+      padding: 0;
+      font-size: 12px;
+      color: #334155;
+    }
+
+    .callout {
+      background-color: #f5f3ff;
+      border-left: 4px solid #7c3aed;
+      border-radius: 0 6px 6px 0;
+      padding: 16px;
+      margin-bottom: 1.5em;
+    }
+
+    .callout h4 {
+      margin-top: 0;
+      margin-bottom: 8px;
+      color: #6d28d9;
+      font-size: 14px;
+    }
+
+    .footer-bar {
+      margin-top: 60px;
+      border-top: 1px solid #e2e8f0;
+      padding-top: 16px;
+      font-size: 11px;
+      color: #94a3b8;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PAGE 1: COVER PAGE -->
+  <div class="title-page">
+    <div class="brand-container">
+      <div class="logo-mark"></div>
+      <div class="logo-text">Roda</div>
+    </div>
+    <div class="tagline">Decentralized Capital Pooling & Autonomous Liquidity Protection on the Arc Network</div>
+    
+    <h2>Project Metadata</h2>
+    <table class="meta-table">
+      <tr>
+        <td class="label">Project Name</td>
+        <td class="value" style="font-family: inherit; font-weight: 500;">Roda</td>
+      </tr>
+      <tr>
+        <td class="label">Track Submission</td>
+        <td class="value" style="font-family: inherit;">Track 2: Best SME Trade Finance & Working Capital Workflow</td>
+      </tr>
+      <tr>
+        <td class="label">Circle Developer Account</td>
+        <td class="value">philosophyfactss@gmail.com</td>
+      </tr>
+      <tr>
+        <td class="label">Circle Products Used</td>
+        <td class="value">USDC, Nanopayments, Circle Developer-Controlled Wallets (ERC-8004 Entegrayonu ile)</td>
+      </tr>
+      <tr>
+        <td class="label">Deployment Chain</td>
+        <td class="value">Arc L1 Testnet (Chain ID: 5042002)</td>
+      </tr>
+      <tr>
+        <td class="label">Factory Contract Address</td>
+        <td class="value">0xE9213F10C1aB7bDa6787EB2C0b48a99278FF55f8</td>
+      </tr>
+      <tr>
+        <td class="label">GitHub Repository</td>
+        <td class="value">https://github.com/Lesnak1/Roda</td>
+      </tr>
+      <tr>
+        <td class="label">Live Web Application</td>
+        <td class="value">https://roda-nine.vercel.app/</td>
+      </tr>
+    </table>
+    
+    <div style="margin-top: auto; font-size: 12px; color: #64748b;">
+      Submitted for the Stablecoins Commerce Stack Challenge (Ignyte · Circle · Arc) • July 2026
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- PAGE 2: EXECUTIVE SUMMARY & PROBLEM STATEMENT -->
+  <div>
+    <h1>Executive Summary</h1>
+    
+    <h2>Problem Overview</h2>
+    <p>
+      Rotating Savings and Credit Associations (ROSCAs) are informal, peer-to-peer financial tools used by over a billion people globally—particularly small business owners in emerging markets—to pool capital and secure interest-free credit. However, traditional ROSCAs suffer from systemic vulnerabilities:
+    </p>
+    <ul>
+      <li><strong>Defaulter Counterparty Risk:</strong> If a member defaults early in the cycle, the savings circle collapses, leaving subsequent members empty-handed.</li>
+      <li><strong>Capital Inefficiency:</strong> Web3 protocols mitigate default risk by requiring 100% to 150% over-collateralization. This approach is counterproductive for SMEs seeking access to capital they do not already have.</li>
+    </ul>
+
+    <h2>Roda's Solution</h2>
+    <p>
+      Roda is an on-chain collaborative savings protocol deployed on Arc Network. We replace heavy collateral locks with smart contract escrow structures, automated deficit recovery rules, and an autonomous, off-chain risk validation engine: the <strong>AI Liquidity Guardian</strong>. 
+    </p>
+    <p>
+      Roda establishes a transparent, reputation-backed credit history (using ERC-8004 registries) that dynamically adjusts the required security deposits as users demonstrate positive repayment behaviors.
+    </p>
+
+    <div class="callout">
+      <h4>Arc Network and Stablecoin Integration</h4>
+      <p>
+        SME micro-savings require high-frequency, low-value contributions. Standard L1 networks are economically unviable due to high gas costs. By building on Arc L1, Roda benefits from USDC-native gas fees and sub-second deterministic finality. This keeps recurring micro-contributions cost-efficient, ensuring gas fees do not erode user savings.
+      </p>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- PAGE 3: PROTOCOL ARCHITECTURE & TECHNICAL INNOVATION -->
+  <div>
+    <h1>Technical Innovation & Architecture</h1>
+    
+    <h2>Implemented Protocol Features</h2>
+    
+    <h3>1. Dynamic Collateral Withholding</h3>
+    <p>
+      Within the <code>closeRound()</code> logic of <code>SavingsCircle.sol</code>, the contract calculates the beneficiary's remaining liability to the pool. When a circle is initialized, members deposit a baseline security collateral. Upon winning a payout pot, the contract evaluates if the beneficiary's locked collateral covers their remaining round duties. If it does not, the contract automatically retains the difference from their gross payout and locks it as collateral to secure the remaining members against late-cycle default.
+    </p>
+
+    <h3>2. Late Default Deficit Protection</h3>
+    <p>
+      If a member exhausts their collateral and defaults, Roda does not freeze the circle. The contract records the shortfall as an on-chain debt entry. When the defaulter's payout round arrives, the contract automatically intercepts the payout pot, clears the outstanding debt, and sends the recovered funds to replenish the accounts of the members who suffered shortfalls in prior rounds.
+    </p>
+
+    <h3>3. ERC-8004 Credit Registry</h3>
+    <p>
+      Every successful contribution and repayment updates the user's reputation profile via the <code>ReputationRegistry</code> (ERC-8004). This ledger dynamically decreases the collateral requirement for future savings circles, transitioning users from collateral-backed to reputation-backed borrowing.
+    </p>
+
+    <h3>4. Dual-Wallet Validator Architecture</h3>
+    <p>
+      To comply with the ReputationRegistry (ERC-8004) self-reporting restrictions (which revert if an agent owner wallet attempts to report reputation scores directly on its operations), we implemented a dual-wallet security design. The primary owner wallet (<code>AI_AGENT_WALLET_ID</code>) handles liquidity management and transaction execution, while a separate validator wallet (<code>AI_AGENT_VALIDATOR_WALLET_ID</code>) submits feedback logs to the <code>ReputationRegistry</code>. This ensures compliance with registry rules while keeping reporting completely decoupled.
+    </p>
+
+    <h2>Architecture Flow</h2>
+    <div class="flow-chart">
+[User Wallet]
+     │
+     ▼ (USDC Contribution / Gas)
+[Roda Web Interface (Next.js)]
+     │
+     ▼ (RPC / Transaction Call)
+[SavingsCircle Contract (Arc L1)] ◄───► [USDC Escrow Pool]
+     ▲
+     │ (1. RPC State Queries: collateral, debt, payments)
+     │ (2. MPC Wallet Transaction Injection)
+[AI Liquidity Guardian Backend]
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- PAGE 4: THE AGENTIC ECONOMY INTEGRATION -->
+  <div>
+    <h1>The Agentic Economy & Circle Integration</h1>
+    
+    <h2>AI Liquidity Guardian</h2>
+    <p>
+      In Roda, risk management is automated through the <strong>AI Liquidity Guardian</strong>. Triggered via the client application, the server-side validation agent queries the smart contract via RPC to inspect the member's risk profile:
+    </p>
+    <ul>
+      <li>Currently locked collateral balance</li>
+      <li>Outstanding defaults and cumulative debt</li>
+      <li>Historical payment behaviors (payment vs. default status per round)</li>
+    </ul>
+
+    <h2>Off-Chain Simulation Layer: L2 Agent Network</h2>
+    <p>
+      To model high-volume transactions and show how Roda scales beyond L1 constraints, we implemented a deterministic <strong>L2 Agent Network</strong>. This layer models high-frequency off-chain micro-payments and state channels among 378 simulated agent wallets. It runs on a deterministic client-side simulation, demonstrating how agent-to-agent nanopayments are batched and periodically settled back to Arc L1.
+    </p>
+
+    <h2>Autonomous On-Chain Injection</h2>
+    <p>
+      The Guardian agent runs a credit evaluation and outputs a structured risk assessment. If a member's risk profile is within acceptable limits, the backend triggers an autonomous transaction injection using Circle's Developer-Controlled Wallets API. The agent's wallet deposits the contribution amount on behalf of the member, protecting the pool's liquidity and preventing unnecessary defaults.
+    </p>
+
+    <pre><code>// AI Liquidity Guardian State Query Format
+{
+  "system": "You are the Roda AI Liquidity Guardian. Analyze the member's ROSCA repayment history, collateral, and debt to output a structured credit risk score.",
+  "parameters": {
+    "collateral": "10.00 USDC",
+    "debt": "0.00 USDC",
+    "history": ["paid", "paid", "defaulted"],
+    "currentRound": 3
+  }
+}</code></pre>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- PAGE 5: DEVELOPER TOOLS FEEDBACK -->
+  <div>
+    <h1>Circle & Arc Product Feedback</h1>
+    
+    <div class="callout" style="background-color: #f0fdf4; border-left-color: #22c55e;">
+      <h4>Why We Chose Circle & Arc</h4>
+      <p>
+        ROSCAs require high-frequency, recurring micro-contributions (typically $10–$50) where standard EVM gas fees (often $0.20 to $1.50) make participation economically unviable. Arc’s sub-second finality and native USDC gas fees allow micro-deposits to retain 99.9% of their value on-chain. Furthermore, using USDC as the native gas token eliminates currency volatility risk for autonomous agents (such as our AI Liquidity Guardian), allowing the risk engine to budget execution fees deterministically without managing floating gas token prices.
+      </p>
+    </div>
+
+    <h2>Developer Experience Gaps & Feedback</h2>
+    
+    <h3>What Worked Well</h3>
+    <ul>
+      <li><strong>Sub-second Finality:</strong> Confirmation times under one second on Arc Testnet match the speed of Web2 banking interfaces.</li>
+      <li><strong>Native USDC Gas:</strong> Eliminating volatile gas token management simplifies fee calculations and treasury operations.</li>
+      <li><strong>Developer-Controlled Wallets:</strong> The MPC API makes automating on-chain operations for autonomous agents straightforward.</li>
+    </ul>
+
+    <h3>What Can Be Improved</h3>
+    <ul>
+      <li>
+        <strong>Lack of Pre-deployed Multicall3 Contract:</strong> Arc Testnet currently lacks a pre-deployed <code>Multicall3</code> contract at the standard address (<code>0xcA11bde05977b3631167028862bE2a173976CA11</code>). Since standard React frontends built on Wagmi/Viem use multicall contracts to bundle read-queries, batch reads failed out of the box. We had to write a client-side parallel promise wrapper (<code>multicallSafe</code>) to bypass this, which increases RPC calls and code complexity.
+      </li>
+      <li>
+        <strong>ERC-8004 Registry Self-Feedback Reverts:</strong> The <code>ReputationRegistry</code> contract reverts self-feedback transactions to prevent sybil manipulation. This requirement was not explicitly documented, necessitating a dual-wallet validator design (Owner vs. Validator wallet) to successfully write logs. Clearer documentation of these registry constraints would save builders significant debugging time.
+      </li>
+    </ul>
+
+    <h3>Recommendations</h3>
+    <ol>
+      <li>Pre-deploy <code>Multicall3</code> at the standard address (<code>0xcA11bde05977b3631167028862bE2a173976CA11</code>) on Arc Testnet.</li>
+      <li>Provide official SDK helper templates or examples for multi-wallet autonomous agent validation patterns to greatly streamline development for agentic economy use cases.</li>
+    </ol>
+
+    <div class="footer-bar">
+      Roda Project Submission Documentation • Built on Arc & Circle • Public Repository: github.com/Lesnak1/Roda
+    </div>
+  </div>
+
+</body>
+</html>
