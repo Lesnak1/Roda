@@ -34,23 +34,22 @@ Traditional real-world ROSCAs (known as *tanda*, *susu*, *stokvel*, *gün*, or *
 ## Protocol Architecture
 
 ```mermaid
-graph TD
-    User([SME ROSCA Member]) -->|1. Deposit / Collateral| WebApp[Roda Frontend dApp]
-    WebApp -->|2. Transaction Call| Circle[SavingsCircle Contract]
-    
-    subgraph Arc L1 Chain
-        Circle -->|USDC Escrow & Deficit Logic| Ledger[(Arc State Ledger)]
-        Ledger -->|USDC Gas Settlement| CircleSDK[Circle USDC Rails]
-    end
+flowchart TD
+    User([User])
+    Factory[CircleFactory Contract]
+    Circle[SavingsCircle Contract]
+    USDC[ERC-20 USDC Contract]
+    Rep[Roda Passport UI]
+    AIAgent[AI Risk Agent Backend]
 
-    AIAgent[AI Liquidity Guardian] -->|3. Query State via RPC| Circle
-    AIAgent -->|4. Run Credit Analysis| Backend[Agent API Backend]
+    User -->|Deploys via| Factory
+    User -->|Joins / Contributes / Claims| Circle
+    Circle -->|Locks / Settles / Withholds| USDC
+    Circle -->|Emits Events| Rep
     
-    AIAgent -->|5. Multi-Wallet Validation| ValidWallet[Validator Wallet]
-    ValidWallet -->|6. Submit Reputation Log| Reputation[ERC-8004 Registry]
-    
-    AIAgent -->|7. Execute Bailout| OwnerWallet[Owner Wallet]
-    OwnerWallet -->|8. Deposit USDC Cover| Circle
+    Circle -.->|1. Query State| AIAgent
+    AIAgent -->|2. Trigger MPC Bailout via Circle SDK| USDC
+    USDC -->|3. Escrow Refill| Circle
 ```
 
 ---
