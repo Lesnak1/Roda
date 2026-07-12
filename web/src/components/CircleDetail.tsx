@@ -18,6 +18,7 @@ import { TxStatus } from "./TxStatus";
 import { ReputationPanel } from "./ReputationPanel";
 import { AIGuardianPanel } from "./AIGuardianPanel";
 import { IntegrationsPanel } from "./IntegrationsPanel";
+import { isL2Address, getL2Circles, getL2CircleMembers } from "@/lib/l2Network";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -51,8 +52,17 @@ export function CircleDetail({
 }) {
   const { address: account } = useAccount();
 
+  const isL2 = isL2Address(address);
+
+  // Look up L2 circle data
+  const l2CircleData = useMemo(() => {
+    if (!isL2) return null;
+    const allL2 = getL2Circles();
+    return allL2.find((c: any) => c.circle.toLowerCase() === address.toLowerCase()) || null;
+  }, [address, isL2]);
+
   const baseRead = { address, abi: circleAbi } as const;
-  const { data, refetch, isLoading, isRefetching } = useReadContracts({
+  const { data, refetch, isLoading: isContractsLoading, isRefetching } = useReadContracts({
     contracts: [
       { ...baseRead, functionName: "state" },
       { ...baseRead, functionName: "contributionAmount" },
@@ -65,20 +75,47 @@ export function CircleDetail({
       { ...baseRead, functionName: "creator" },
       { ...baseRead, functionName: "joinDeadline" },
     ],
+    query: { enabled: !isL2 },
   });
 
-  const state = Number(data?.[0]?.result ?? 0);
-  const contribution = (data?.[1]?.result as bigint) ?? 0n;
-  const collateral = (data?.[2]?.result as bigint) ?? 0n;
-  const memberCount = Number(data?.[3]?.result ?? 0);
-  const joined = Number(data?.[4]?.result ?? 0);
-  const currentRound = Number(data?.[5]?.result ?? 0);
-  const roundDeadline = Number(data?.[6]?.result ?? 0);
-  const members = (data?.[7]?.result as `0x${string}`[]) ?? [];
-  const creator = (data?.[8]?.result as `0x${string}`) ?? undefined;
-  const joinDeadline = Number(data?.[9]?.result ?? 0);
+  const state = isL2
+    ? (l2CircleData?.state ?? 0)
+    : Number(data?.[0]?.result ?? 0);
+  const contribution = isL2
+    ? (l2CircleData?.contributionAmount ?? 0n)
+    : ((data?.[1]?.result as bigint) ?? 0n);
+  const collateral = isL2
+    ? contribution
+    : ((data?.[2]?.result as bigint) ?? 0n);
+  const memberCount = isL2
+    ? (l2CircleData?.memberCount ?? 0)
+    : Number(data?.[3]?.result ?? 0);
+  const joined = isL2
+    ? (l2CircleData?.joinedCount ?? 0)
+    : Number(data?.[4]?.result ?? 0);
+  const currentRound = isL2
+    ? (state === 2 ? memberCount - 1 : 0) // Completed: show last round
+    : Number(data?.[5]?.result ?? 0);
+  const roundDeadline = isL2
+    ? 0
+    : Number(data?.[6]?.result ?? 0);
+
+  const creator = isL2
+    ? (l2CircleData?.creator ?? ("0x0000000000000000000000000000000000000000" as `0x${string}`))
+    : ((data?.[8]?.result as `0x${string}`) ?? undefined);
+
+  const members = useMemo(() => {
+    if (isL2 && l2CircleData) {
+      return getL2CircleMembers(address, memberCount, creator);
+    }
+    return (data?.[7]?.result as `0x${string}`[]) ?? [];
+  }, [isL2, l2CircleData, address, memberCount, creator, data]);
+
+  const joinDeadline = isL2
+    ? 0
+    : Number(data?.[9]?.result ?? 0);
  
-  const isMember = account ? members.map((m) => m.toLowerCase()).includes(account.toLowerCase()) : false;
+  const isMember = account ? members.map((m: string) => m.toLowerCase()).includes(account.toLowerCase()) : false;
   const isCreator = account && creator ? account.toLowerCase() === creator.toLowerCase() : false;
   const pot = contribution * BigInt(memberCount);
 
@@ -89,32 +126,34 @@ export function CircleDetail({
       { ...baseRead, functionName: "beneficiaryOf", args: [BigInt(currentRound)] },
       { ...baseRead, functionName: "payoutClaimed", args: [BigInt(currentRound)] },
     ],
-    query: { enabled: state === CircleState.Active },
+    query: { enabled: !isL2 && state === CircleState.Active },
   });
-  const hasContributed = Boolean(roundData?.[0]?.result);
-  const roundClosed = Boolean(roundData?.[1]?.result);
-  const beneficiary = (roundData?.[2]?.result as `0x${string}`) ?? undefined;
-  const payoutClaimed = Boolean(roundData?.[3]?.result);
+  const hasContributed = isL2 ? true : Boolean(roundData?.[0]?.result);
+  const roundClosed = isL2 ? true : Boolean(roundData?.[1]?.result);
+  const beneficiary = isL2
+    ? (members[currentRound] ?? undefined)
+    : ((roundData?.[2]?.result as `0x${string}`) ?? undefined);
+  const payoutClaimed = isL2 ? true : Boolean(roundData?.[3]?.result);
   const isBeneficiary = account && beneficiary ? account.toLowerCase() === beneficiary.toLowerCase() : false;
 
   const roundQueries = useMemo(() => {
-    if (!members || members.length === 0) return [];
-    return members.flatMap((_, i) => [
+    if (!members || members.length === 0 || isL2) return [];
+    return members.flatMap((_: any, i: number) => [
       { ...baseRead, functionName: "roundClosed", args: [BigInt(i)] },
       { ...baseRead, functionName: "payoutClaimed", args: [BigInt(i)] },
       { ...baseRead, functionName: "claimablePayout", args: [BigInt(i)] },
       { ...baseRead, functionName: "withheldFromPayout", args: [BigInt(i)] },
       { ...baseRead, functionName: "payoutClaimedAmount", args: [BigInt(i)] },
     ]);
-  }, [members, address]);
+  }, [members, address, isL2]);
 
   const { data: allRoundsData, refetch: refetchAllRounds } = useReadContracts({
     contracts: roundQueries,
-    query: { enabled: members.length > 0 },
+    query: { enabled: !isL2 && members.length > 0 },
   });
 
   const unclaimedRounds = useMemo(() => {
-    if (!account || !members || !allRoundsData) return [];
+    if (!account || !members || !allRoundsData || isL2) return [];
     const list = [];
     for (let i = 0; i < members.length; i++) {
       const beneficiaryAddress = members[i];
@@ -134,14 +173,14 @@ export function CircleDetail({
       }
     }
     return list;
-  }, [account, members, allRoundsData]);
+  }, [account, members, allRoundsData, isL2]);
 
   const { data: allowance, refetch: refetchAllowance } = useReadContract({
     address: USDC_ADDRESS,
     abi: erc20Abi,
     functionName: "allowance",
     args: account ? [account, address] : undefined,
-    query: { enabled: Boolean(account) },
+    query: { enabled: !isL2 && Boolean(account) },
   });
 
   const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
@@ -184,6 +223,8 @@ export function CircleDetail({
     if (state === CircleState.Cancelled) return <span className="badge red">Cancelled</span>;
     return <span className="badge gray">Completed</span>;
   }, [state]);
+
+  const isLoading = !isL2 && isContractsLoading;
 
   if (isLoading) {
     return (
@@ -258,139 +299,161 @@ export function CircleDetail({
         </div>
 
         <AnimatePresence mode="wait">
-          {state === CircleState.Recruiting && (
+          {isL2 ? (
             <motion.div
-              key="recruiting"
+              key="l2-info"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
               className="row"
               style={{ ...sActions, flexDirection: "column", alignItems: "stretch" }}
             >
-              <div style={{ display: "flex", gap: 12, width: "100%", flexWrap: "wrap" }}>
-                {isMember ? (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%" }}>
-                    <div className="alert ok" style={{ width: "100%" }}>
-                      <CheckCircle size={16} className="ai" />
-                      <span>You have joined this circle. Waiting for other members to fill the remaining seats...</span>
-                    </div>
+              <div className="alert ok" style={{ width: "100%", background: "rgba(139, 92, 246, 0.05)", border: "1px solid rgba(139, 92, 246, 0.15)" }}>
+                <Layers size={16} style={{ color: "var(--accent)" }} />
+                <span style={{ color: "var(--text)" }}>
+                  <b>L2 Agent Channel:</b> Coordinated and settled autonomously off-chain by AI Liquidity Guardians for high-frequency nanopayments.
+                </span>
+              </div>
+            </motion.div>
+          ) : (
+            <>
+              {state === CircleState.Recruiting && (
+                <motion.div
+                  key="recruiting"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="row"
+                  style={{ ...sActions, flexDirection: "column", alignItems: "stretch" }}
+                >
+                  <div style={{ display: "flex", gap: 12, width: "100%", flexWrap: "wrap" }}>
+                    {isMember ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 12, width: "100%" }}>
+                        <div className="alert ok" style={{ width: "100%" }}>
+                          <CheckCircle size={16} className="ai" />
+                          <span>You have joined this circle. Waiting for other members to fill the remaining seats...</span>
+                        </div>
+                        <button
+                          className="btn ghost sm"
+                          disabled={busy}
+                          onClick={() => call("leave")}
+                          style={{ display: "inline-flex", alignItems: "center", gap: 6, alignSelf: "flex-start" }}
+                        >
+                          {busy && <span className="btn-spin" />}
+                          Leave Circle & Refund Collateral
+                        </button>
+                      </div>
+                    ) : needApproveForJoin ? (
+                      <button className="btn" disabled={busy} onClick={() => approve(collateral)}>
+                        {busy && <span className="btn-spin" />}1) Approve USDC ({formatUsdc(collateral)})
+                      </button>
+                    ) : (
+                      <button className="btn success" disabled={busy} onClick={() => call("join")}>
+                        {busy && <span className="btn-spin" />}2) Join Circle
+                      </button>
+                    )}
+                  </div>
+                  {isCreator && (
                     <button
-                      className="btn ghost sm"
+                      className="btn danger ghost sm"
                       disabled={busy}
-                      onClick={() => call("leave")}
-                      style={{ display: "inline-flex", alignItems: "center", gap: 6, alignSelf: "flex-start" }}
+                      onClick={() => call("cancelCircle")}
+                      style={{ display: "inline-flex", alignItems: "center", gap: 6, alignSelf: "flex-start", marginTop: 12 }}
+                    >
+                      Cancel Circle (Creator)
+                    </button>
+                  )}
+                </motion.div>
+              )}
+
+              {state === CircleState.Cancelled && (
+                <motion.div
+                  key="cancelled"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="row"
+                  style={{ ...sActions, flexDirection: "column", alignItems: "stretch" }}
+                >
+                  <div className="alert warn" style={{ width: "100%" }}>
+                    <AlertTriangle size={16} className="ai" />
+                    <span>This savings circle has been cancelled by its creator.</span>
+                  </div>
+                  {isMember && (
+                    <button
+                      className="btn success sm"
+                      disabled={busy}
+                      onClick={() => call("withdrawCollateral")}
+                      style={{ display: "inline-flex", alignItems: "center", gap: 6, alignSelf: "flex-start", marginTop: 12 }}
                     >
                       {busy && <span className="btn-spin" />}
-                      Leave Circle & Refund Collateral
+                      Withdraw My Collateral ({formatUsdc(collateral)} USDC)
                     </button>
+                  )}
+                </motion.div>
+              )}
+
+              {state === CircleState.Active && (
+                <motion.div
+                  key="active"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="row"
+                  style={sActions}
+                >
+                  {!isMember && (
+                    <div className="alert warn" style={{ width: "100%" }}>
+                      <AlertTriangle size={16} className="ai" />
+                      <span>This circle is active and full. You are not a participant in this circle.</span>
+                    </div>
+                  )}
+                  {isMember && !hasContributed && (
+                    needApproveForContribute ? (
+                      <button className="btn" disabled={busy} onClick={() => approve(contribution)}>
+                        {busy && <span className="btn-spin" />}1) Approve USDC ({formatUsdc(contribution)})
+                      </button>
+                    ) : (
+                      <button className="btn success" disabled={busy} onClick={() => call("contribute")}>
+                        {busy && <span className="btn-spin" />}2) Pay This Round ({formatUsdc(contribution)})
+                      </button>
+                    )
+                  )}
+                  {isMember && hasContributed && (
+                    <div className="alert ok">
+                      <CheckCircle size={16} className="ai" />
+                      <span>Your contribution for Round {currentRound + 1} has been processed successfully.</span>
+                    </div>
+                  )}
+                  {(isMember || isCreator) && (
+                    <button className="btn ghost" disabled={busy} onClick={() => call("closeRound")}>
+                      Close Round
+                    </button>
+                  )}
+                </motion.div>
+              )}
+
+              {state === CircleState.Completed && (
+                <motion.div
+                  key="completed"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="row"
+                  style={sActions}
+                >
+                  <div className="alert ok" style={{ width: "100%" }}>
+                    <ShieldCheck size={16} className="ai" />
+                    <span>Circle completed successfully. All rounds are settled and closed.</span>
                   </div>
-                ) : needApproveForJoin ? (
-                  <button className="btn" disabled={busy} onClick={() => approve(collateral)}>
-                    {busy && <span className="btn-spin" />}1) Approve USDC ({formatUsdc(collateral)})
-                  </button>
-                ) : (
-                  <button className="btn success" disabled={busy} onClick={() => call("join")}>
-                    {busy && <span className="btn-spin" />}2) Join Circle
-                  </button>
-                )}
-              </div>
-              {isCreator && (
-                <button
-                  className="btn danger ghost sm"
-                  disabled={busy}
-                  onClick={() => call("cancelCircle")}
-                  style={{ display: "inline-flex", alignItems: "center", gap: 6, alignSelf: "flex-start", marginTop: 12 }}
-                >
-                  Cancel Circle (Creator)
-                </button>
+                  {isMember && (
+                    <button className="btn" disabled={busy} onClick={() => call("withdrawCollateral")}>
+                      {busy && <span className="btn-spin" />}Withdraw Collateral
+                    </button>
+                  )}
+                </motion.div>
               )}
-            </motion.div>
-          )}
-
-          {state === CircleState.Cancelled && (
-            <motion.div
-              key="cancelled"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="row"
-              style={{ ...sActions, flexDirection: "column", alignItems: "stretch" }}
-            >
-              <div className="alert warn" style={{ width: "100%" }}>
-                <AlertTriangle size={16} className="ai" />
-                <span>This savings circle has been cancelled by its creator.</span>
-              </div>
-              {isMember && (
-                <button
-                  className="btn success sm"
-                  disabled={busy}
-                  onClick={() => call("withdrawCollateral")}
-                  style={{ display: "inline-flex", alignItems: "center", gap: 6, alignSelf: "flex-start", marginTop: 12 }}
-                >
-                  {busy && <span className="btn-spin" />}
-                  Withdraw My Collateral ({formatUsdc(collateral)} USDC)
-                </button>
-              )}
-            </motion.div>
-          )}
-
-          {state === CircleState.Active && (
-            <motion.div
-              key="active"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="row"
-              style={sActions}
-            >
-              {!isMember && (
-                <div className="alert warn" style={{ width: "100%" }}>
-                  <AlertTriangle size={16} className="ai" />
-                  <span>This circle is active and full. You are not a participant in this circle.</span>
-                </div>
-              )}
-              {isMember && !hasContributed && (
-                needApproveForContribute ? (
-                  <button className="btn" disabled={busy} onClick={() => approve(contribution)}>
-                    {busy && <span className="btn-spin" />}1) Approve USDC ({formatUsdc(contribution)})
-                  </button>
-                ) : (
-                  <button className="btn success" disabled={busy} onClick={() => call("contribute")}>
-                    {busy && <span className="btn-spin" />}2) Pay This Round ({formatUsdc(contribution)})
-                  </button>
-                )
-              )}
-              {isMember && hasContributed && (
-                <div className="alert ok">
-                  <CheckCircle size={16} className="ai" />
-                  <span>Your contribution for Round {currentRound + 1} has been processed successfully.</span>
-                </div>
-              )}
-              <button className="btn ghost" disabled={busy} onClick={() => call("closeRound")}>
-                Close Round
-              </button>
-            </motion.div>
-          )}
-
-          {state === CircleState.Completed && (
-            <motion.div
-              key="completed"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="row"
-              style={sActions}
-            >
-              <div className="alert ok" style={{ width: "100%" }}>
-                <ShieldCheck size={16} className="ai" />
-                <span>Circle completed successfully. All rounds are settled and closed.</span>
-              </div>
-              {isMember && (
-                <button className="btn" disabled={busy} onClick={() => call("withdrawCollateral")}>
-                  {busy && <span className="btn-spin" />}Withdraw Collateral
-                </button>
-              )}
-            </motion.div>
+            </>
           )}
         </AnimatePresence>
 

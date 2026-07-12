@@ -6,6 +6,7 @@ import { usePublicClient, useAccount, useWriteContract } from "wagmi";
 import { circleAbi, multicallSafe, erc20Abi, USDC_ADDRESS } from "@/lib/contracts";
 import { formatUsdc, shortAddr } from "@/lib/format";
 import { Brain, Cpu, ShieldCheck, AlertCircle, RefreshCw, CheckCircle2, XCircle, Zap, Award, Activity, Fingerprint } from "lucide-react";
+import { isL2Address } from "@/lib/l2Network";
 
 export function AIGuardianPanel({
   address,
@@ -114,8 +115,46 @@ export function AIGuardianPanel({
   }, []);
 
   async function fetchContractData() {
-    if (!client || !members || members.length === 0) return;
+    if (!members || members.length === 0) return;
     setLoadingData(true);
+
+    if (isL2Address(address)) {
+      // Mock data deterministically for L2 agent network channels
+      const tempCollaterals: Record<string, number> = {};
+      const tempDebts: Record<string, number> = {};
+      const tempHistories: Record<string, string[]> = {};
+      
+      for (let i = 0; i < members.length; i++) {
+        const m = members[i].toLowerCase();
+        tempCollaterals[m] = 25; // 25 USDC collateral
+        tempDebts[m] = 0;
+        
+        // Mock a realistic payment history: mostly paid, maybe a rare defaulted round
+        const hist: string[] = [];
+        for (let r = 0; r < i; r++) {
+          // Deterministic default simulation: member #3 defaults in round 1
+          if (i === 3 && r === 1) {
+            hist.push("defaulted");
+          } else {
+            hist.push("paid");
+          }
+        }
+        tempHistories[m] = hist;
+      }
+      
+      setCollaterals(tempCollaterals);
+      setDebts(tempDebts);
+      setHistories(tempHistories);
+      setDataError(null);
+      
+      if (!selectedMember && members.length > 0) {
+        setSelectedMember(members[0].toLowerCase());
+      }
+      setLoadingData(false);
+      return;
+    }
+
+    if (!client) return;
     try {
       const contracts: any[] = [];
       

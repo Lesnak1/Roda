@@ -24,32 +24,36 @@ Traditional real-world ROSCAs (known as *tanda*, *susu*, *stokvel*, *gün*, or *
 
 1. **Trustless Escrow:** Contributions are held securely by the `SavingsCircle` smart contract, not in any personal bank account or multisig wallet.
 2. **Default Protection via Collateral:** Every participant locks one round of contribution as a security deposit upon joining. If a member defaults, the contract automatically tops up the pot using their locked collateral, ensuring the designated beneficiary is paid in full.
-3. **Onchain Reputation Indexing:** Contributions and defaults generate immutable blockchain events. Roda uses these events to construct trust and reputation scores directly from contract activity.
-4. **AI Liquidity Guardian (Circle Wallets Integration):** Features an autonomous server-side AI risk agent that monitors circle defaults. If a member defaults but maintains a high credit rating, the agent autonomously executes an on-chain bailout transfer using Circle's Developer-Controlled Wallets SDK to keep the cycle moving.
-5. **Arc Native Optimization:** Roda is built for Arc, Circle's EVM L1 where USDC is the native gas token, delivering sub-second finality and stablecoin-denominated transactions.
+3. **Onchain Reputation Indexing (ERC-8004):** Contributions and defaults update reputation scores via the `ReputationRegistry` (ERC-8004). This provides portable on-chain credit profiles.
+4. **AI Liquidity Guardian:** Features an autonomous risk agent that monitors circle defaults. If a member defaults, the agent executes an on-chain bailout transaction using Circle's Developer-Controlled Wallets API to protect circle liquidity.
+5. **L2 Agent Network (Simulation Layer):** An off-chain state-channel network modeling high-frequency transactions among 378 simulated agent wallets. This models how Roda matches high-volume micro-payments off-chain before settling transactions back to Arc L1.
+6. **Arc Native Optimization:** Roda is built for Arc, Circle's EVM L1 where USDC is the native gas token, delivering sub-second finality and stablecoin-denominated transactions.
 
 ---
 
 ## Protocol Architecture
 
 ```mermaid
-flowchart TD
-    User([User])
-    Factory[CircleFactory Contract]
-    Circle[SavingsCircle Contract]
-    USDC[ERC-20 USDC Contract]
-    Rep[Roda Passport UI]
-    AIAgent[AI Risk Agent Backend]
-
-    User -->|Deploys via| Factory
-    User -->|Joins / Contributes / Claims| Circle
-    Circle -->|Locks / Settles / Withholds| USDC
-    Circle -->|Emits Events| Rep
+graph TD
+    User([SME ROSCA Member]) -->|1. Deposit / Collateral| WebApp[Roda Frontend dApp]
+    WebApp -->|2. Transaction Call| Circle[SavingsCircle Contract]
     
-    Circle -.->|1. Query State| AIAgent
-    AIAgent -->|2. Trigger MPC Bailout via Circle SDK| USDC
-    USDC -->|3. Escrow Refill| Circle
+    subgraph Arc L1 Chain
+        Circle -->|USDC Escrow & Deficit Logic| Ledger[(Arc State Ledger)]
+        Ledger -->|USDC Gas Settlement| CircleSDK[Circle USDC Rails]
+    end
+
+    AIAgent[AI Liquidity Guardian] -->|3. Query State via RPC| Circle
+    AIAgent -->|4. Run Credit Analysis| Backend[Agent API Backend]
+    
+    AIAgent -->|5. Multi-Wallet Validation| ValidWallet[Validator Wallet]
+    ValidWallet -->|6. Submit Reputation Log| Reputation[ERC-8004 Registry]
+    
+    AIAgent -->|7. Execute Bailout| OwnerWallet[Owner Wallet]
+    OwnerWallet -->|8. Deposit USDC Cover| Circle
 ```
+
+---
 
 ## Repository Structure
 
@@ -166,6 +170,14 @@ Roda is designed as a trustless, mathematically secured financial protocol. Foll
 * **Roda's Solution:** During the **close-time settlement (`closeRound()`)**, Roda calculates the beneficiary's remaining lifetime liability in the circle (`contributionAmount * remaining_rounds`). If this liability exceeds their current locked collateral, Roda automatically withholds the difference directly from the gross round pot and immediately refills their locked collateral escrow.
 * **Mathematical Deficit Elimination:** This close-time dynamic withholding guarantees that early beneficiaries are always 100% collateralized against all future contributions, regardless of when they choose to pull/claim their payout. If they default multiple times, their refilled collateral successfully covers each missed payment.
 * **Test Verification:** This advanced safety feature and its defense against delayed-claim withholding avoidance are formally verified in the Foundry unit test suite under `testSerialDefaultDeficit()` and `testBeneficiaryCannotAvoidWithholdingByDelayingClaim()`.
+
+### 3. Dual-Wallet Validator Design (ERC-8004 Workaround)
+* **The Vulnerability:** The ERC-8004 registry implementation reverts self-feedback transactions to prevent reputation manipulation. If the agent owner wallet attempts to report reputation scores directly on its operations, the registry blocks the transaction.
+* **Roda's Solution:** We implemented a dual-wallet security design. The primary owner wallet (`AI_AGENT_WALLET_ID`) handles liquidity management and transaction execution, while a separate validator wallet (`AI_AGENT_VALIDATOR_WALLET_ID`) submits feedback logs to the `ReputationRegistry`. This ensures compliance with registry rules while keeping reporting completely decoupled.
+
+### 4. Client-Level Gas Protection
+* **The Vulnerability:** Under EVM logic, executing a contract call (like `closeRound()`) against an uninitialized or empty contract succeeds at the EVM layer but performs no state change, wasting transaction gas.
+* **Roda's Solution:** Roda checks the caller's membership status and contract initialization status before allowing any interactive buttons to be clicked. Non-members and non-creators are blocked from executing administrative operations, preventing unnecessary gas loss.
 
 ---
 

@@ -1632,3 +1632,72 @@ a:hover {
   animation: pulse-ring 1.5s infinite;
 }
 
+/* Simulator Stats Bar & Controls */
+.sim-stats-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 18px 24px;
+  background: rgba(99, 102, 241, 0.03);
+  border: 1px dashed rgba(99, 102, 241, 0.25);
+  border-radius: var(--r-md);
+  backdrop-filter: blur(8px);
+}
+[data-theme="light"] .sim-stats-bar {
+  background: rgba(79, 70, 229, 0.02);
+  border-color: rgba(79, 70, 229, 0.2);
+}
+.sim-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sim-stat-label {
+  font-size: 10.5px;
+  color: var(--muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.sim-stat-value {
+  font-size: 18px;
+  font-weight: 850;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.sim-stat-value.green-text {
+  color: var(--success);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Toggle Switch */
+.sim-toggle-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  border-radius: 99px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+.sim-toggle-wrap:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+.sim-toggle-input {
+  cursor: pointer;
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
+}
+
+
