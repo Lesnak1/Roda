@@ -37,11 +37,6 @@ export async function GET() {
       transport: http(),
     });
 
-    const publicClient = createPublicClient({
-      chain: arcTestnet,
-      transport: http(),
-    });
-
     let agentId: string | null = null;
 
     // 2. Direct fast check via ownerOf to bypass getLogs rate-limits and chunking
