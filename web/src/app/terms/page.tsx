@@ -82,7 +82,7 @@ export default function TermsPage() {
             <motion.section variants={itemVariants} className="docs-section">
               <h2>1. Agreement to Terms</h2>
               <p>
-                By accessing or using Roda (the "Platform"), you agree to be bound by these Terms of Service. If you do not agree to these terms, do not access or use the Platform. Roda is currently deployed on the <strong>Arc Testnet</strong> for educational and demonstration purposes.
+                By accessing or using Roda (the "Platform"), you agree to be bound by these Terms of Service. If you do not agree to these terms, do not access or use the Platform. Roda is currently deployed on the <strong>Arc Network (Testnet)</strong> for educational and demonstration purposes.
               </p>
 
               <h2>2. No Financial Advice</h2>
@@ -110,7 +110,7 @@ export default function TermsPage() {
       </main>
 
       <footer className="footer">
-        <div>Roda · Trustless rotating savings circles in USDC · Testnet only</div>
+        <div>Roda · Trustless rotating savings circles in USDC · Built on Arc · Testnet only</div>
         <div style={{ marginTop: 6, fontSize: "13.5px" }}>
           Built by <a href="https://github.com/Lesnak1" target="_blank" rel="noreferrer" className="leknax-link">Leknax</a>
         </div>
@@ -120,6 +120,7 @@ export default function TermsPage() {
           <Link href="/how-to" className="footer-link">How to Use</Link>
           <Link href="/docs" className="footer-link">Docs</Link>
         </div>
+        <div style={{ marginTop: 10, fontSize: "11px", opacity: 0.5 }}>Arc™ is a trademark of Circle Internet Group, Inc. and/or its affiliates.</div>
       </footer>
     </div>
   );

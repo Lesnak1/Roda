@@ -77,7 +77,7 @@ export default function HowToPage() {
                 How to Use <span className="grad-text">Roda</span>
               </h1>
               <p className="about-intro">
-                Learn how to set up your wallet on Arc, create or join savings circles,
+                Learn how to set up your wallet on Arc Network, create or join savings circles,
                 and interact with the AI Liquidity Guardian.
               </p>
             </motion.div>
@@ -180,7 +180,7 @@ export default function HowToPage() {
       </main>
 
       <footer className="footer">
-        <div>Roda · Trustless rotating savings circles in USDC · Testnet only</div>
+        <div>Roda · Trustless rotating savings circles in USDC · Built on Arc · Testnet only</div>
         <div style={{ marginTop: 6, fontSize: "13.5px" }}>
           Built by <a href="https://github.com/Lesnak1" target="_blank" rel="noreferrer" className="leknax-link">Leknax</a>
         </div>
@@ -192,6 +192,7 @@ export default function HowToPage() {
           <Link href="/terms" className="footer-link">Terms</Link>
           <Link href="/privacy" className="footer-link">Privacy</Link>
         </div>
+        <div style={{ marginTop: 10, fontSize: "11px", opacity: 0.5 }}>Arc™ is a trademark of Circle Internet Group, Inc. and/or its affiliates.</div>
       </footer>
     </div>
   );

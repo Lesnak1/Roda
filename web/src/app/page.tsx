@@ -98,8 +98,8 @@ export default function Home() {
                     Save together, <span className="grad-text">onchain</span>. Trust lives in code, not an organizer.
                   </h1>
                   <p>
-                    Roda brings one of the oldest savings traditions in the world — the rotating savings circle
-                    (ROSCA) — onchain and makes it trustless on Arc. No organizer to trust: contributions are
+                    Roda is built on Arc Network — bringing one of the oldest savings traditions in the world, the rotating savings circle
+                    (ROSCA), onchain and making it trustless. No organizer to trust: contributions are
                     locked in an escrow contract, the payout order is transparent on-chain, and missed payments
                     are covered from each security deposit.
                   </p>
@@ -175,7 +175,7 @@ export default function Home() {
       </main>
 
       <footer className="footer">
-        <div>Roda · Trustless rotating savings circles in USDC · Testnet only · Not financial advice</div>
+        <div>Roda · Trustless rotating savings circles in USDC · Built on Arc · Testnet only · Not financial advice</div>
         <div style={{ marginTop: 6, fontSize: "13.5px" }}>
           Built by <a href="https://github.com/Lesnak1" target="_blank" rel="noreferrer" className="leknax-link">Leknax</a>
         </div>
@@ -187,6 +187,7 @@ export default function Home() {
           <Link href="/terms" className="footer-link">Terms</Link>
           <Link href="/privacy" className="footer-link">Privacy</Link>
         </div>
+        <div style={{ marginTop: 10, fontSize: "11px", opacity: 0.5 }}>Arc™ is a trademark of Circle Internet Group, Inc. and/or its affiliates.</div>
       </footer>
     </div>
   );

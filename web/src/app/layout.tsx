@@ -17,9 +17,9 @@ const jbMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Roda · Onchain Savings Circles on Arc",
+  title: "Roda · Onchain Savings Circles Built on Arc",
   description:
-    "Trustless rotating savings circles (ROSCA) on Arc, powered by USDC.",
+    "Trustless rotating savings circles (ROSCA) built on Arc Network, powered by USDC.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
