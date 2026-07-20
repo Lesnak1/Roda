@@ -37,6 +37,11 @@ export async function GET() {
       transport: http(),
     });
 
+    const logClient = createPublicClient({
+      chain: arcTestnet,
+      transport: http("https://rpc.testnet.arc.network"),
+    });
+
     let agentId: string | null = null;
 
     // 2. Direct fast check via ownerOf to bypass getLogs rate-limits and chunking
@@ -57,8 +62,8 @@ export async function GET() {
     // Fallback: If direct check failed, try reading logs in a single small chunk (last 9900 blocks)
     if (!agentId) {
       try {
-        const latestBlock = await publicClient.getBlockNumber();
-        const logs = await publicClient.getLogs({
+        const latestBlock = await logClient.getBlockNumber();
+        const logs = await logClient.getLogs({
           address: IDENTITY_REGISTRY,
           event: parseAbiItem(
             "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)"
@@ -100,10 +105,10 @@ export async function GET() {
     let feedbacks: any[] = [];
     let avgScore = 94;
     try {
-      const latestBlock = await publicClient.getBlockNumber();
+      const latestBlock = await logClient.getBlockNumber();
       // Keep queries within the 9900 block range limit
       const startBlock = latestBlock - 9900n;
-      const reputationLogs = await publicClient.getLogs({
+      const reputationLogs = await logClient.getLogs({
         address: REPUTATION_REGISTRY,
         event: parseAbiItem(
           "event NewFeedback(uint256 indexed agentId, address indexed clientAddress, uint64 feedbackIndex, int128 value, uint8 valueDecimals, string indexed indexedTag1, string tag1, string tag2, string endpoint, string feedbackURI, bytes32 feedbackHash)"

@@ -53,6 +53,11 @@ export async function POST(req: Request) {
       transport: http(),
     });
 
+    const logClient = createPublicClient({
+      chain: arcTestnet,
+      transport: http("https://rpc.testnet.arc.network"),
+    });
+
     // Read circle state
     const [state, currentRound, members, contributionAmount] = await Promise.all([
       publicClient.readContract({ address: circleAddress, abi: circleReadAbi, functionName: "state" }),
@@ -191,7 +196,7 @@ Return a JSON response in the following format:
         const validatorAddress = validatorResponse.data?.wallet?.address;
 
         if (ownerAddress && validatorAddress) {
-          const latestBlock = await publicClient.getBlockNumber();
+          const latestBlock = await logClient.getBlockNumber();
           const chunkSize = 9500n;
           let agentId: string | null = null;
 
@@ -200,7 +205,7 @@ Return a JSON response in the following format:
             let chunkFromBlock = toBlock - chunkSize;
             if (chunkFromBlock < 0n) chunkFromBlock = 0n;
 
-            const logs = await publicClient.getLogs({
+            const logs = await logClient.getLogs({
               address: IDENTITY_REGISTRY,
               event: parseAbiItem(
                 "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)"
