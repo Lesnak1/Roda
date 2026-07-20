@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createPublicClient, http, parseAbiItem, keccak256, toHex } from "viem";
-import { arcTestnet } from "viem/chains";
+import { arcTestnet } from "@/lib/chains/arcTestnet";
 import { IDENTITY_REGISTRY, REPUTATION_REGISTRY } from "@/lib/contracts";
 
 export const maxDuration = 60;

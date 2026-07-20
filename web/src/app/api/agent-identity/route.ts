@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { initiateDeveloperControlledWalletsClient } from "@circle-fin/developer-controlled-wallets";
 import { createPublicClient, http, parseAbiItem, getContract } from "viem";
-import { arcTestnet } from "viem/chains";
+import { arcTestnet } from "@/lib/chains/arcTestnet";
 import { IDENTITY_REGISTRY, REPUTATION_REGISTRY, identityRegistryAbi } from "@/lib/contracts";
 
 const METADATA_URI = "ipfs://bafkreibdi6623n3xpf7ymk62ckb4bo75o3qemwkpfvp5i25j66itxvsoei";

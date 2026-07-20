@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { initiateDeveloperControlledWalletsClient } from "@circle-fin/developer-controlled-wallets";
 import { createPublicClient, http, parseAbiItem } from "viem";
-import { arcTestnet } from "viem/chains";
+import { arcTestnet } from "@/lib/chains/arcTestnet";
 
 const USDC_ADDRESS = process.env.NEXT_PUBLIC_USDC_ADDRESS || "0x3600000000000000000000000000000000000000";
 const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS || "0x0000000000000000000000000000000000000000";
