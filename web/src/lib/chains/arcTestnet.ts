@@ -14,8 +14,8 @@ export const arcTestnet = defineChain({
   rpcUrls: {
     default: {
       http: [
-        process.env.NEXT_PUBLIC_ARC_RPC_URL ?? "https://arc-testnet.g.alchemy.com/v2/QNS2Qy6uBju_7o-Q1u2zsuXnrq3dmEt_",
-        "https://rpc.testnet.arc.network",
+        "https://arc-testnet.g.alchemy.com/v2/QNS2Qy6uBju_7o-Q1u2zsuXnrq3dmEt_",
+        process.env.NEXT_PUBLIC_ARC_RPC_URL ?? "https://rpc.testnet.arc.network",
       ],
       webSocket: ["wss://rpc.testnet.arc.network"],
     },
