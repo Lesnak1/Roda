@@ -22,7 +22,7 @@ const RECRUITING_DURATIONS = [
   { label: "7 days", value: 604800 },
 ];
 
-export function CreateCircle({ onCreated }: { onCreated: () => void }) {
+export function CreateCircle({ onCreated }: { onCreated: (circleAddress?: `0x${string}`) => void }) {
   const [amount, setAmount] = useState("10");
   const [members, setMembers] = useState(3);
   const [duration, setDuration] = useState(86400);
@@ -65,12 +65,27 @@ export function CreateCircle({ onCreated }: { onCreated: () => void }) {
 
   useEffect(() => {
     if (isConfirmed && !isReverted) {
+      let newCircleAddr: `0x${string}` | undefined = undefined;
+      try {
+        const factoryLog = receipt?.logs?.find(
+          (l) => l.address.toLowerCase() === FACTORY_ADDRESS.toLowerCase()
+        );
+        if (factoryLog && factoryLog.topics && factoryLog.topics[1]) {
+          const topic1 = factoryLog.topics[1];
+          if (topic1) {
+            newCircleAddr = `0x${topic1.slice(26)}` as `0x${string}`;
+          }
+        }
+      } catch (err) {
+        console.error("Failed to parse circleAddress from logs:", err);
+      }
+
       const timer = setTimeout(() => {
-        onCreated();
+        onCreated(newCircleAddr);
       }, 4500);
       return () => clearTimeout(timer);
     }
-  }, [isConfirmed, isReverted, onCreated]);
+  }, [isConfirmed, isReverted, receipt, onCreated]);
 
   const busy = isPending || isConfirming;
 

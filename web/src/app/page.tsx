@@ -148,8 +148,12 @@ export default function Home() {
                           transition={{ duration: 0.2 }}
                         >
                           <CreateCircle
-                            onCreated={() => {
-                              setTab("discover");
+                            onCreated={(newCircleAddr) => {
+                              if (newCircleAddr) {
+                                setSelected(newCircleAddr);
+                              } else {
+                                setTab("discover");
+                              }
                               setReloadKey((k) => k + 1);
                             }}
                           />
