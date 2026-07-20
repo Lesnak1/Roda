@@ -229,15 +229,24 @@ export function CircleDetail({
   }, [state]);
 
   const isLoading = !isL2 && isContractsLoading;
+  const isSyncing = !isL2 && (!data || data.some((d) => d.status === "failure"));
 
-  if (isLoading) {
+  if (isLoading || isSyncing) {
     return (
-      <div className="card">
-        <button className="btn ghost sm back-btn" onClick={onBack}>
-          <ArrowLeft size={14} style={{ marginRight: 6 }} /> Back
-        </button>
-        <div className="skeleton" style={sk1} />
-        <div className="skeleton" style={sk2} />
+      <div className="card" style={{ display: "flex", flexDirection: "column", gap: 16, alignItems: "center", padding: "40px 20px", textAlign: "center" }}>
+        <div className="btn-spin" style={{ width: 24, height: 24, border: "2px solid var(--accent)", borderTopColor: "transparent" }} />
+        <h3 className="card-title">Syncing circle details...</h3>
+        <p className="card-desc" style={{ maxWidth: 360, margin: "0 auto" }}>
+          Reading contract data from Arc L1. This might take a few seconds to index.
+        </p>
+        <div style={{ display: "flex", gap: 12, marginTop: 12 }}>
+          <button className="btn ghost sm" onClick={onBack}>
+            Back to Dashboard
+          </button>
+          <button className="btn sm" onClick={refreshAll}>
+            <RefreshCw size={12} style={{ marginRight: 6 }} /> Retry
+          </button>
+        </div>
       </div>
     );
   }
