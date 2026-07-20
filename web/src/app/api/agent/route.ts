@@ -196,31 +196,49 @@ Return a JSON response in the following format:
         const validatorAddress = validatorResponse.data?.wallet?.address;
 
         if (ownerAddress && validatorAddress) {
-          const latestBlock = await logClient.getBlockNumber();
-          const chunkSize = 9500n;
           let agentId: string | null = null;
 
-          for (let i = 0; i < 5; i++) {
-            const toBlock = latestBlock - (BigInt(i) * chunkSize);
-            let chunkFromBlock = toBlock - chunkSize;
-            if (chunkFromBlock < 0n) chunkFromBlock = 0n;
-
-            const logs = await logClient.getLogs({
+          // Direct check to bypass logs query entirely
+          try {
+            const owner = await publicClient.readContract({
               address: IDENTITY_REGISTRY,
-              event: parseAbiItem(
-                "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)"
-              ),
-              args: { to: ownerAddress as `0x${string}` },
-              fromBlock: chunkFromBlock,
-              toBlock,
+              abi: [{ type: "function", name: "ownerOf", stateMutability: "view", inputs: [{ name: "tokenId", type: "uint256" }], outputs: [{ name: "", type: "address" }] }],
+              functionName: "ownerOf",
+              args: [849938n],
             });
-
-            if (logs.length > 0) {
-              agentId = logs[logs.length - 1].args.tokenId!.toString();
-              break;
+            if (owner.toLowerCase() === ownerAddress.toLowerCase()) {
+              agentId = "849938";
             }
+          } catch (e) {
+            console.warn("Direct check failed in agent API, falling back to logs:", e);
+          }
 
-            if (chunkFromBlock === 0n) break;
+          if (!agentId) {
+            const latestBlock = await logClient.getBlockNumber();
+            const chunkSize = 9500n;
+
+            for (let i = 0; i < 5; i++) {
+              const toBlock = latestBlock - (BigInt(i) * chunkSize);
+              let chunkFromBlock = toBlock - chunkSize;
+              if (chunkFromBlock < 0n) chunkFromBlock = 0n;
+
+              const logs = await logClient.getLogs({
+                address: IDENTITY_REGISTRY,
+                event: parseAbiItem(
+                  "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)"
+                ),
+                args: { to: ownerAddress as `0x${string}` },
+                fromBlock: chunkFromBlock,
+                toBlock,
+              });
+
+              if (logs.length > 0) {
+                agentId = logs[logs.length - 1].args.tokenId!.toString();
+                break;
+              }
+
+              if (chunkFromBlock === 0n) break;
+            }
           }
 
           if (agentId) {
