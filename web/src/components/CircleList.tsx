@@ -67,7 +67,16 @@ export function CircleList({ onSelect }: { onSelect: (addr: `0x${string}`) => vo
     abi: factoryAbi,
     functionName: "getCircles",
     args: [0n, 50n],
+    query: {
+      staleTime: 0,
+      refetchOnMount: "always",
+    },
   });
+
+  // Refetch on mount/remount
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
 
   // Reverse list: newest circles first
   const realCircles = useMemo(

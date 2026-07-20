@@ -67,7 +67,7 @@ export function CreateCircle({ onCreated }: { onCreated: () => void }) {
     if (isConfirmed && !isReverted) {
       const timer = setTimeout(() => {
         onCreated();
-      }, 2500);
+      }, 4500);
       return () => clearTimeout(timer);
     }
   }, [isConfirmed, isReverted, onCreated]);

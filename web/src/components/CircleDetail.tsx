@@ -75,7 +75,11 @@ export function CircleDetail({
       { ...baseRead, functionName: "creator" },
       { ...baseRead, functionName: "joinDeadline" },
     ],
-    query: { enabled: !isL2 },
+    query: {
+      enabled: !isL2,
+      staleTime: 0,
+      refetchOnMount: "always",
+    },
   });
 
   const state = isL2
@@ -97,7 +101,7 @@ export function CircleDetail({
     ? (state === 2 ? memberCount - 1 : 0) // Completed: show last round
     : Number(data?.[5]?.result ?? 0);
   const roundDeadline = isL2
-    ? 0
+    ? (l2CircleData ? Number(l2CircleData.createdAt) + Number(l2CircleData.roundDuration) : 0)
     : Number(data?.[6]?.result ?? 0);
 
   const creator = isL2
@@ -112,7 +116,7 @@ export function CircleDetail({
   }, [isL2, l2CircleData, address, memberCount, creator, data]);
 
   const joinDeadline = isL2
-    ? 0
+    ? (l2CircleData ? Number(l2CircleData.createdAt) + 7200 : 0)
     : Number(data?.[9]?.result ?? 0);
  
   const isMember = account ? members.map((m: string) => m.toLowerCase()).includes(account.toLowerCase()) : false;
