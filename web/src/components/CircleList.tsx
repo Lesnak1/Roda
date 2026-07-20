@@ -60,7 +60,7 @@ export function CircleList({ onSelect }: { onSelect: (addr: `0x${string}`) => vo
   const client = usePublicClient();
   const [states, setStates] = useState<Record<string, number>>({});
   const [joinedCounts, setJoinedCounts] = useState<Record<string, number>>({});
-  const [showL2, setShowL2] = useState(true);
+  const [showL2, setShowL2] = useState(false);
 
   const { data, isLoading, refetch, isRefetching, error } = useReadContract({
     address: FACTORY_ADDRESS,
