@@ -3,7 +3,7 @@
 import type { CSSProperties } from "react";
 import { useEffect, useState } from "react";
 import { usePublicClient, useAccount, useWriteContract } from "wagmi";
-import { circleAbi, multicallSafe, erc20Abi, USDC_ADDRESS } from "@/lib/contracts";
+import { circleAbi, multicallSafe, erc20Abi, USDC_ADDRESS, CircleState } from "@/lib/contracts";
 import { formatUsdc, shortAddr } from "@/lib/format";
 import { Brain, Cpu, ShieldCheck, AlertCircle, RefreshCw, CheckCircle2, XCircle, Zap, Award, Activity, Fingerprint } from "lucide-react";
 import { isL2Address } from "@/lib/l2Network";
@@ -12,10 +12,12 @@ export function AIGuardianPanel({
   address,
   members,
   currentRound,
+  state = CircleState.Active,
 }: {
   address: `0x${string}`;
   members: `0x${string}`[];
   currentRound: number;
+  state?: number;
 }) {
   const client = usePublicClient();
   const { address: account } = useAccount();
@@ -505,32 +507,48 @@ export function AIGuardianPanel({
       )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 14 }}>
-        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-          <label style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 500 }}>Select Member:</label>
-          <select
-            value={selectedMember}
-            onChange={(e) => {
-              setSelectedMember(e.target.value);
-              setRiskData(null);
-              setRiskError(null);
-              setBailoutHash(null);
-            }}
-            style={selectStyle}
-          >
-            {members.map((m) => (
-              <option key={m} value={m.toLowerCase()}>
-                {shortAddr(m)} {m.toLowerCase() === account?.toLowerCase() ? "(You)" : ""}
-              </option>
-            ))}
-          </select>
-          <button className="btn success sm" onClick={evaluateRisk} disabled={loadingRisk || loadingData}>
-            {loadingRisk && <span className="btn-spin" />}
-            Analyze Risk
-          </button>
-          <button className="btn ghost sm" onClick={fetchContractData} disabled={loadingData}>
-            <RefreshCw size={14} className={loadingData ? "animate-spin" : ""} />
-          </button>
-        </div>
+        {state !== CircleState.Active ? (
+          <div className="alert warn" style={{ margin: 0 }}>
+            <AlertCircle size={16} />
+            <span>
+              Risk analysis is only available when the circle is <b>Active</b> (recruiting finished). Current state:{" "}
+              <b>
+                {state === CircleState.Recruiting
+                  ? "Recruiting"
+                  : state === CircleState.Completed
+                  ? "Completed"
+                  : "Cancelled"}
+              </b>.
+            </span>
+          </div>
+        ) : (
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            <label style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 500 }}>Select Member:</label>
+            <select
+              value={selectedMember}
+              onChange={(e) => {
+                setSelectedMember(e.target.value);
+                setRiskData(null);
+                setRiskError(null);
+                setBailoutHash(null);
+              }}
+              style={selectStyle}
+            >
+              {members.map((m) => (
+                <option key={m} value={m.toLowerCase()}>
+                  {shortAddr(m)} {m.toLowerCase() === account?.toLowerCase() ? "(You)" : ""}
+                </option>
+              ))}
+            </select>
+            <button className="btn success sm" onClick={evaluateRisk} disabled={loadingRisk || loadingData}>
+              {loadingRisk && <span className="btn-spin" />}
+              Analyze Risk
+            </button>
+            <button className="btn ghost sm" onClick={fetchContractData} disabled={loadingData}>
+              <RefreshCw size={14} className={loadingData ? "animate-spin" : ""} />
+            </button>
+          </div>
+        )}
 
         {riskError && (
           <div className="alert err" style={{ marginTop: 10 }}>

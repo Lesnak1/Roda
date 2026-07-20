@@ -578,7 +578,7 @@ export function CircleDetail({
       </motion.div>
 
       <motion.div variants={itemVariants}>
-        <AIGuardianPanel address={address} members={members} currentRound={currentRound} />
+        <AIGuardianPanel address={address} members={members} currentRound={currentRound} state={state} />
       </motion.div>
 
       <motion.div variants={itemVariants}>
