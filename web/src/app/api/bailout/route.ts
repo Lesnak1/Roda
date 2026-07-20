@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { initiateDeveloperControlledWalletsClient } from "@circle-fin/developer-controlled-wallets";
 import { createPublicClient, http, parseAbiItem } from "viem";
 import { arcTestnet } from "@/lib/chains/arcTestnet";
+import { isL2Address } from "@/lib/l2Network";
 
 const USDC_ADDRESS = process.env.NEXT_PUBLIC_USDC_ADDRESS || "0x3600000000000000000000000000000000000000";
 const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS || "0x0000000000000000000000000000000000000000";
@@ -33,6 +34,10 @@ export async function POST(req: Request) {
     // --- Input validation ---
     if (!circleAddress || !memberAddress) {
       return NextResponse.json({ error: "Missing circleAddress or memberAddress" }, { status: 400 });
+    }
+
+    if (isL2Address(circleAddress)) {
+      return NextResponse.json({ error: "L2 Agent Channels manage solvency off-chain. On-chain bailout is not supported." }, { status: 400 });
     }
 
     const apiKey = process.env.CIRCLE_API_KEY;
