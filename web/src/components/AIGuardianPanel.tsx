@@ -507,48 +507,32 @@ export function AIGuardianPanel({
       )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 14, marginTop: 14 }}>
-        {state !== CircleState.Active ? (
-          <div className="alert warn" style={{ margin: 0 }}>
-            <AlertCircle size={16} />
-            <span>
-              Risk analysis is only available when the circle is <b>Active</b> (recruiting finished). Current state:{" "}
-              <b>
-                {state === CircleState.Recruiting
-                  ? "Recruiting"
-                  : state === CircleState.Completed
-                  ? "Completed"
-                  : "Cancelled"}
-              </b>.
-            </span>
-          </div>
-        ) : (
-          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-            <label style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 500 }}>Select Member:</label>
-            <select
-              value={selectedMember}
-              onChange={(e) => {
-                setSelectedMember(e.target.value);
-                setRiskData(null);
-                setRiskError(null);
-                setBailoutHash(null);
-              }}
-              style={selectStyle}
-            >
-              {members.map((m) => (
-                <option key={m} value={m.toLowerCase()}>
-                  {shortAddr(m)} {m.toLowerCase() === account?.toLowerCase() ? "(You)" : ""}
-                </option>
-              ))}
-            </select>
-            <button className="btn success sm" onClick={evaluateRisk} disabled={loadingRisk || loadingData}>
-              {loadingRisk && <span className="btn-spin" />}
-              Analyze Risk
-            </button>
-            <button className="btn ghost sm" onClick={fetchContractData} disabled={loadingData}>
-              <RefreshCw size={14} className={loadingData ? "animate-spin" : ""} />
-            </button>
-          </div>
-        )}
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+          <label style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 500 }}>Select Member:</label>
+          <select
+            value={selectedMember}
+            onChange={(e) => {
+              setSelectedMember(e.target.value);
+              setRiskData(null);
+              setRiskError(null);
+              setBailoutHash(null);
+            }}
+            style={selectStyle}
+          >
+            {members.map((m) => (
+              <option key={m} value={m.toLowerCase()}>
+                {shortAddr(m)} {m.toLowerCase() === account?.toLowerCase() ? "(You)" : ""}
+              </option>
+            ))}
+          </select>
+          <button className="btn success sm" onClick={evaluateRisk} disabled={loadingRisk || loadingData}>
+            {loadingRisk && <span className="btn-spin" />}
+            Analyze Risk
+          </button>
+          <button className="btn ghost sm" onClick={fetchContractData} disabled={loadingData}>
+            <RefreshCw size={14} className={loadingData ? "animate-spin" : ""} />
+          </button>
+        </div>
 
         {riskError && (
           <div className="alert err" style={{ marginTop: 10 }}>
@@ -625,7 +609,7 @@ export function AIGuardianPanel({
                       <button
                         className="btn success"
                         onClick={triggerBailout}
-                        disabled={executingBailout || !!bailoutHash || !isCurrentUserMember}
+                        disabled={executingBailout || !!bailoutHash || !isCurrentUserMember || state !== CircleState.Active}
                         style={{ alignSelf: "flex-start", display: "inline-flex", alignItems: "center", gap: 6 }}
                       >
                         {executingBailout ? (
@@ -643,7 +627,23 @@ export function AIGuardianPanel({
                         )}
                       </button>
 
-                      {!isCurrentUserMember && (
+                      {state !== CircleState.Active && (
+                        <div style={warningStyle}>
+                          <AlertCircle size={14} />
+                          <span>
+                            Bailout execution is only available when the circle is <b>Active</b>. Current state:{" "}
+                            <b>
+                              {state === CircleState.Recruiting
+                                ? "Recruiting"
+                                : state === CircleState.Completed
+                                ? "Completed"
+                                : "Cancelled"}
+                            </b>.
+                          </span>
+                        </div>
+                      )}
+
+                      {state === CircleState.Active && !isCurrentUserMember && (
                         <div style={warningStyle}>
                           <AlertCircle size={14} />
                           <span>You must be a member of this circle to execute and claim bailout contributions.</span>
