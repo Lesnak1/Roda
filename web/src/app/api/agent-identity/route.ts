@@ -128,18 +128,13 @@ export async function GET() {
       if (feedbacks.length > 0) {
         avgScore = Math.round(totalScore / feedbacks.length);
       } else {
-        // Fallback mockup data to present to users when no recent logs exist in the 10k blocks range
-        feedbacks = [
-          { id: "1", score: 95, tag: "liquidity_bailout", comment: "Bailout transaction executed successfully. Pool solvency maintained." },
-          { id: "2", score: 92, tag: "risk_check", comment: "Credit check verified for ROSCA circle members." }
-        ];
+        feedbacks = [];
+        avgScore = 100;
       }
     } catch (e) {
-      console.warn("Failed to query reputation logs, falling back to mock feedbacks:", e);
-      feedbacks = [
-        { id: "1", score: 95, tag: "liquidity_bailout", comment: "Bailout transaction executed successfully. Pool solvency maintained." },
-        { id: "2", score: 92, tag: "risk_check", comment: "Credit check verified for ROSCA circle members." }
-      ];
+      console.warn("Failed to query reputation logs:", e);
+      feedbacks = [];
+      avgScore = 100;
     }
 
     return NextResponse.json({
