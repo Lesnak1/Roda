@@ -229,7 +229,9 @@ export function CircleDetail({
   }, [state]);
 
   const isLoading = !isL2 && isContractsLoading;
-  const isSyncing = !isL2 && (!data || data.some((d) => d.status === "failure"));
+  const isSyncing = !isL2 && !data;
+  const hasRpcError = !isL2 && data && data.some((d) => d.status === "failure");
+  const isBrokenData = !isL2 && (contribution === 0n || memberCount === 0);
 
   if (isLoading || isSyncing) {
     return (
@@ -265,6 +267,29 @@ export function CircleDetail({
       </motion.div>
 
       <motion.div variants={itemVariants} className="card">
+        {hasRpcError && (
+          <div className="alert warn" style={{ marginBottom: 16 }}>
+            <AlertTriangle size={16} className="ai" />
+            <span style={{ fontSize: "13px" }}>
+              Arc RPC rate limit reached. Some details might be outdated.{" "}
+              <button
+                onClick={refreshAll}
+                style={{
+                  background: "none",
+                  border: "none",
+                  textDecoration: "underline",
+                  color: "var(--accent)",
+                  cursor: "pointer",
+                  padding: 0,
+                  font: "inherit",
+                  fontWeight: 600
+                }}
+              >
+                Retry Sync
+              </button>
+            </span>
+          </div>
+        )}
         <div className="row" style={{ marginBottom: "16px" }}>
           {stateBadge}
           <div className="spacer" />
@@ -327,6 +352,25 @@ export function CircleDetail({
                   <b>L2 Agent Channel:</b> Coordinated and settled autonomously off-chain by AI Liquidity Guardians for high-frequency nanopayments.
                 </span>
               </div>
+            </motion.div>
+          ) : isBrokenData && hasRpcError ? (
+            <motion.div
+              key="rpc-broken"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="row"
+              style={{ ...sActions, flexDirection: "column", alignItems: "stretch" }}
+            >
+              <div className="alert warn" style={{ width: "100%" }}>
+                <AlertTriangle size={16} className="ai" />
+                <span>
+                  Circle details are still indexing or the RPC query limit has been reached. Please wait or retry sync.
+                </span>
+              </div>
+              <button className="btn" disabled style={{ opacity: 0.6, cursor: "not-allowed", alignSelf: "flex-start" }}>
+                <span className="btn-spin" style={{ marginRight: 8 }} /> Waiting for RPC Sync...
+              </button>
             </motion.div>
           ) : (
             <>
