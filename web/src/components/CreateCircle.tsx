@@ -82,7 +82,7 @@ export function CreateCircle({ onCreated }: { onCreated: (circleAddress?: `0x${s
 
       const timer = setTimeout(() => {
         onCreated(newCircleAddr);
-      }, 4500);
+      }, 800);
       return () => clearTimeout(timer);
     }
   }, [isConfirmed, isReverted, receipt, onCreated]);

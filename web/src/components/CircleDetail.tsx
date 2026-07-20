@@ -198,7 +198,7 @@ export function CircleDetail({
     refetchAllRounds();
   }
   function onTx() {
-    setTimeout(refreshAll, 2500);
+    setTimeout(refreshAll, 1000);
   }
   function approve(amount: bigint) {
     reset();
