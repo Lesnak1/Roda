@@ -65,6 +65,7 @@ roda/
 │  ├─ script/Deploy.s.sol          Deploys CircleFactory to Arc Testnet
 │  └─ foundry.toml & remappings.txt
 ├─ web/                            Next.js (App Router) + Wagmi v2 + Viem dApp
+│  ├─ public/                      Static assets (logos, typography icons)
 │  ├─ src/app/                     Pages (Home, About, Docs) and global styles
 │  ├─ src/components/              UI widgets (ThemeToggle, WalletGate, list/detail panels)
 │  ├─ src/lib/                     Chains configuration, ABI, formatting utilities
@@ -146,10 +147,11 @@ To deploy Roda to Vercel:
 3. **Environment Variables:** Define the following variables in the Vercel dashboard:
    - `NEXT_PUBLIC_FACTORY_ADDRESS` (deployed `CircleFactory` address)
    - `NEXT_PUBLIC_USDC_ADDRESS` (`0x3600000000000000000000000000000000000000`)
-   - `NEXT_PUBLIC_ARC_RPC_URL` (`https://rpc.testnet.arc.network`)
+   - `NEXT_PUBLIC_ARC_RPC_URL` (custom RPC like Alchemy to bypass public node rate limits)
    - `CIRCLE_API_KEY` (Circle Developer Wallets API Key)
    - `CIRCLE_ENTITY_SECRET` (Circle entity secret hex string)
-   - `AI_AGENT_WALLET_ID` (Circle Developer-Controlled Wallet ID)
+   - `AI_AGENT_WALLET_ID` (Circle Developer-Controlled Wallet ID for liquidity execution)
+   - `AI_AGENT_VALIDATOR_WALLET_ID` (Circle Developer-Controlled Wallet ID for validator reputation logging)
    - `AI_API_KEY` (DeepSeek model API key)
 4. **Deploy:** Hit deploy. Vercel will automatically compile, optimize, and launch your dApp!
 
