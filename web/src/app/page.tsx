@@ -8,6 +8,8 @@ import { CreateCircle } from "@/components/CreateCircle";
 import { CircleList } from "@/components/CircleList";
 import { CircleDetail } from "@/components/CircleDetail";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { ActivityTicker } from "@/components/ActivityTicker";
+import { RoscaCalculator } from "@/components/RoscaCalculator";
 import { FACTORY_ADDRESS } from "@/lib/contracts";
 
 const pageVariants = {
@@ -30,7 +32,7 @@ const childVariants = {
 };
 
 export default function Home() {
-  const [tab, setTab] = useState<"discover" | "create">("discover");
+  const [tab, setTab] = useState<"discover" | "create" | "calculator">("discover");
   const [selected, setSelected] = useState<`0x${string}` | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
 
@@ -68,6 +70,7 @@ export default function Home() {
           </div>
         </div>
       </header>
+      <ActivityTicker />
 
       <main className="main">
         <div className="container">
@@ -136,6 +139,12 @@ export default function Home() {
                       >
                         Create Circle
                       </button>
+                      <button
+                        className={tab === "calculator" ? "seg active" : "seg"}
+                        onClick={() => setTab("calculator")}
+                      >
+                        🧮 ROSCA Calculator
+                      </button>
                     </div>
 
                     <AnimatePresence mode="wait">
@@ -157,6 +166,16 @@ export default function Home() {
                               setReloadKey((k) => k + 1);
                             }}
                           />
+                        </motion.div>
+                      ) : tab === "calculator" ? (
+                        <motion.div
+                          key="calculatorTab"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <RoscaCalculator />
                         </motion.div>
                       ) : (
                         <motion.div

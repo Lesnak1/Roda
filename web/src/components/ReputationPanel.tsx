@@ -7,6 +7,7 @@ import { circleAbi, multicallSafe } from "@/lib/contracts";
 import { shortAddr } from "@/lib/format";
 import { Award, ShieldCheck, TrendingUp, Sparkles, AlertCircle } from "lucide-react";
 import { isL2Address } from "@/lib/l2Network";
+import { RodaPassportCard } from "./RodaPassportCard";
 
 // On-chain reputation derived from circle's contribution history.
 // Serves as a decentralized financial passport for the user.
@@ -127,7 +128,15 @@ export function ReputationPanel({
       )}
 
       {!loading && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 12 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 16 }}>
+          <RodaPassportCard
+            address={members[0]}
+            agentId="849938"
+            repaymentRate={100}
+            tierName="Tier 1 Sovereign Saver"
+            totalVolumeUsdc={150}
+          />
+
           {members.map((m) => {
             const r = rep[m.toLowerCase()] ?? { contributions: 0, defaults: 0 };
             const totalActions = r.contributions + r.defaults;

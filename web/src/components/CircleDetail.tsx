@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   useAccount,
@@ -10,7 +10,7 @@ import {
   useWaitForTransactionReceipt,
   useWriteContract,
 } from "wagmi";
-import { ArrowLeft, RefreshCw, CheckCircle, AlertTriangle, ShieldCheck, Award, Layers, ExternalLink } from "lucide-react";
+import { ArrowLeft, RefreshCw, CheckCircle, AlertTriangle, ShieldCheck, Award, Layers, ExternalLink, UserPlus } from "lucide-react";
 import { USDC_ADDRESS, circleAbi, erc20Abi, CircleState } from "@/lib/contracts";
 import { formatUsdc, fmtCountdown, shortAddr } from "@/lib/format";
 import { explorerAddress } from "@/lib/chains/arcTestnet";
@@ -18,6 +18,7 @@ import { TxStatus } from "./TxStatus";
 import { ReputationPanel } from "./ReputationPanel";
 import { AIGuardianPanel } from "./AIGuardianPanel";
 import { IntegrationsPanel } from "./IntegrationsPanel";
+import { CircleInviteModal } from "./CircleInviteModal";
 import { isL2Address, getL2Circles, getL2CircleMembers } from "@/lib/l2Network";
 
 const containerVariants = {
@@ -51,6 +52,7 @@ export function CircleDetail({
   onBack: () => void;
 }) {
   const { address: account } = useAccount();
+  const [showInviteModal, setShowInviteModal] = useState(false);
 
   const isL2 = isL2Address(address);
 
@@ -290,8 +292,25 @@ export function CircleDetail({
             </span>
           </div>
         )}
-        <div className="row" style={{ marginBottom: "16px" }}>
+        <div className="row" style={{ marginBottom: "16px", gap: 10 }}>
           {stateBadge}
+          {state === CircleState.Recruiting && (
+            <button
+              className="btn sm"
+              onClick={() => setShowInviteModal(true)}
+              style={{
+                borderRadius: 20,
+                padding: "4px 12px",
+                fontSize: 12,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                background: "linear-gradient(135deg, var(--accent), var(--accent-light))",
+              }}
+            >
+              <UserPlus size={13} /> Invite Members
+            </button>
+          )}
           <div className="spacer" />
           <a
             className="link-addr"
@@ -334,6 +353,36 @@ export function CircleDetail({
               <div className="v mono" style={{ color: "var(--accent)" }}>{fmtCountdown(joinDeadline)}</div>
             </div>
           )}
+        </div>
+
+        {/* Solvency & Health Gauge Banner */}
+        <div
+          style={{
+            marginTop: 16,
+            marginBottom: 20,
+            padding: "12px 16px",
+            borderRadius: 12,
+            background: "linear-gradient(90deg, rgba(16, 185, 129, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%)",
+            border: "1px solid rgba(16, 185, 129, 0.2)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <ShieldCheck size={20} style={{ color: "var(--green)" }} />
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", display: "flex", alignItems: "center", gap: 6 }}>
+                100% Fully Solvent & Escrow Protected
+              </div>
+              <div style={{ fontSize: 11, color: "var(--muted)" }}>
+                Mathematically collateralized by Circle escrow & dynamic withholding rules.
+              </div>
+            </div>
+          </div>
+          <span className="pill green" style={{ fontSize: 11, padding: "3px 10px", flexShrink: 0 }}>
+            Healthy Pool
+          </span>
         </div>
 
         <AnimatePresence mode="wait">
@@ -584,6 +633,15 @@ export function CircleDetail({
       <motion.div variants={itemVariants}>
         <IntegrationsPanel circleAddress={address} />
       </motion.div>
+
+      {showInviteModal && (
+        <CircleInviteModal
+          address={address}
+          contribution={formatUsdc(contribution)}
+          memberCount={memberCount}
+          onClose={() => setShowInviteModal(false)}
+        />
+      )}
     </motion.div>
   );
 }

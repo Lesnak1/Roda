@@ -1700,4 +1700,13 @@ a:hover {
   height: 15px;
 }
 
+@keyframes tickerScroll {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
 

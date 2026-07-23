@@ -19,7 +19,29 @@ const jbMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Roda · Onchain Savings Circles Built on Arc",
   description:
-    "Trustless rotating savings circles (ROSCA) built on Arc Network, powered by USDC.",
+    "Trustless rotating savings circles (ROSCA) built on Arc Network, powered by USDC featuring an autonomous AI Liquidity Guardian.",
+  openGraph: {
+    title: "Roda · Onchain Savings Circles Built on Arc",
+    description: "Trustless rotating savings circles (ROSCA) built on Arc Network featuring dynamic collateral escrows and an autonomous AI Liquidity Guardian.",
+    url: "https://roda-nine.vercel.app",
+    siteName: "Roda Protocol",
+    images: [
+      {
+        url: "https://roda-nine.vercel.app/logo_with_text.png",
+        width: 1200,
+        height: 630,
+        alt: "Roda Onchain Credit Passport Card",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Roda · Onchain Savings Circles Built on Arc",
+    description: "Trustless rotating savings circles (ROSCA) built on Arc Network featuring dynamic collateral escrows and an autonomous AI Liquidity Guardian.",
+    images: ["https://roda-nine.vercel.app/logo_with_text.png"],
+  },
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
