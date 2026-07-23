@@ -20,14 +20,16 @@ Traditional real-world ROSCAs (known as *tanda*, *susu*, *stokvel*, *gün*, or *
 
 ---
 
-## Key Features & Utility
+## Key Features & Ultra-Premium UX
 
-1. **Trustless Escrow:** Contributions are held securely by the `SavingsCircle` smart contract, not in any personal bank account or multisig wallet.
-2. **Default Protection via Collateral:** Every participant locks one round of contribution as a security deposit upon joining. If a member defaults, the contract automatically tops up the pot using their locked collateral, ensuring the designated beneficiary is paid in full.
-3. **Onchain Reputation Indexing (ERC-8004):** Contributions and defaults update reputation scores via the `ReputationRegistry` (ERC-8004). This provides portable on-chain credit profiles.
-4. **AI Liquidity Guardian:** Features an autonomous risk agent that monitors circle defaults. If a member defaults, the agent executes an on-chain bailout transaction using Circle's Developer-Controlled Wallets API to protect circle liquidity.
-5. **L2 Agent Network (Simulation Layer):** An off-chain state-channel network modeling high-frequency transactions among 378 simulated agent wallets. This models how Roda matches high-volume micro-payments off-chain before settling transactions back to Arc L1.
-6. **Arc Native Optimization:** Roda is built for Arc, Circle's EVM L1 where USDC is the native gas token, delivering sub-second finality and stablecoin-denominated transactions.
+1. **🧮 ROSCA Capital Efficiency Calculator:** Interactive slider simulator comparing Roda's single-contribution collateral against traditional 150% over-collateralized DeFi protocols. Proves up to **7.5x Capital Efficiency** and collateral savings in real-time.
+2. **🛡️ Circle Solvency & Health Gauge:** On-chain health badge rendering **"%100 Fully Solvent & Escrow Protected"**, verifying that every circle round is mathematically collateralized by escrow and dynamic withholding rules.
+3. **💳 Roda Credit Passport & X/Twitter Share Modal:** Apple/Revolut-styled 3D credit passport card featuring ERC-8004 Agent ID `#849938`, repayment rates, HTML5 Canvas PNG card download, and Twitter Web Intent integration with automatic Twitter Card rendering.
+4. **🔗 One-Click Circle Invite & QR Generator:** Instant shareable invite link (`?circle=0x...`) and SVG QR code generator for recruiting new circle members.
+5. **⚡ Live On-Chain Activity Ticker:** Streams real-time `CircleFactory` deployments and `REPUTATION_REGISTRY` feedback events from Arc Testnet into an auto-scrolling header ticker.
+6. **🌌 Quantum Liquidity Orbital Background:** 3D perspective GPU-accelerated background frame animations (`perspective: 1200px`) featuring rotating yörünge rings and pulsing participant nodes.
+7. **🤖 Autonomous AI Liquidity Guardian:** Features an AI risk agent that monitors circle defaults and executes automated on-chain bailout transactions using Circle's Developer-Controlled Wallets API.
+8. **🔒 Trustless Escrow & Dynamic Withholding:** Contributions are locked in smart contract escrow, and lifetime default deficits are automatically refilled during `closeRound()` settlement.
 
 ---
 
@@ -39,7 +41,7 @@ flowchart TD
     Factory[CircleFactory Contract]
     Circle[SavingsCircle Contract]
     USDC[ERC-20 USDC Contract]
-    Rep[Roda Passport UI]
+    Rep[Roda Credit Passport UI]
     AIAgent[AI Risk Agent Backend]
 
     User -->|Deploys via| Factory
@@ -65,13 +67,19 @@ roda/
 │  ├─ script/Deploy.s.sol          Deploys CircleFactory to Arc Testnet
 │  └─ foundry.toml & remappings.txt
 ├─ web/                            Next.js (App Router) + Wagmi v2 + Viem dApp
-│  ├─ public/                      Static assets (logos, typography icons)
-│  ├─ src/app/                     Pages (Home, About, Docs) and global styles
-│  ├─ src/components/              UI widgets (ThemeToggle, WalletGate, list/detail panels)
-│  ├─ src/lib/                     Chains configuration, ABI, formatting utilities
+│  ├─ public/                      Static brand assets (logo, logo_with_text, logo_typography)
+│  ├─ src/app/                     Pages (Home, About, Docs) & global styles (layout.tsx, globals.css)
+│  ├─ src/components/              UI widgets & Ultra-Premium Modules
+│  │  ├─ ActivityTicker.tsx        Live Arc Testnet event ticker
+│  │  ├─ CircleInviteModal.tsx     Invite link & QR code generator
+│  │  ├─ RodaPassportCard.tsx      3D Credit Passport & Twitter share modal
+│  │  ├─ RoscaCalculator.tsx       ROSCA vs 150% DeFi capital efficiency simulator
+│  │  └─ CircleDetail, ReputationPanel, AIGuardianPanel, IntegrationsPanel
+│  ├─ src/lib/                     Arc chain config, ABIs, formatters & L2 simulation layer
 │  └─ package.json & next.config.mjs
 └─ README.md
 ```
+
 ---
 
 ## Arc Decimal Contexts (Crucial)
@@ -135,7 +143,7 @@ npm run build
 ```bash
 npm run dev
 ```
-Open [http://localhost:3000](http://localhost:3000) to interact with the dApp.
+Open [http://localhost:3000](http://localhost:3000) or [http://localhost:3005](http://localhost:3005) to interact with the dApp.
 
 ---
 
@@ -167,30 +175,23 @@ Roda is designed as a trustless, mathematically secured financial protocol. Foll
 * **Instant Collateral Refunds:** Members can withdraw their locked collateral at any time during `Recruiting` using `leave()`, or retrieve it after cancellation using `withdrawCollateral()`.
 
 ### 2. Dynamic Collateral Withholding (100% Deficit Prevention)
-* **The Vulnerability:** In traditional ROSCA models, if a member receives the pot early and subsequently defaults on *multiple* later rounds, their single locked collateral only covers their first default, leading to deficits for subsequent beneficiaries. Additionally, if withholding is only performed when claiming the payout, an adversarial beneficiary could delay claiming their payout while defaulting on rounds, avoiding the withholding mechanism.
+* **The Vulnerability:** In traditional ROSCA models, if a member receives the pot early and subsequently defaults on *multiple* later rounds, their single locked collateral only covers their first default, leading to deficits for subsequent beneficiaries.
 * **Roda's Solution:** During the **close-time settlement (`closeRound()`)**, Roda calculates the beneficiary's remaining lifetime liability in the circle (`contributionAmount * remaining_rounds`). If this liability exceeds their current locked collateral, Roda automatically withholds the difference directly from the gross round pot and immediately refills their locked collateral escrow.
-* **Mathematical Deficit Elimination:** This close-time dynamic withholding guarantees that early beneficiaries are always 100% collateralized against all future contributions, regardless of when they choose to pull/claim their payout. If they default multiple times, their refilled collateral successfully covers each missed payment.
-* **Test Verification:** This advanced safety feature and its defense against delayed-claim withholding avoidance are formally verified in the Foundry unit test suite under `testSerialDefaultDeficit()` and `testBeneficiaryCannotAvoidWithholdingByDelayingClaim()`.
+* **Mathematical Deficit Elimination:** This close-time dynamic withholding guarantees that early beneficiaries are always 100% collateralized against all future contributions, regardless of when they choose to pull/claim their payout.
 
 ### 3. Dual-Wallet Validator Design (ERC-8004 Workaround)
 * **The Vulnerability:** The ERC-8004 registry implementation reverts self-feedback transactions to prevent reputation manipulation. If the agent owner wallet attempts to report reputation scores directly on its operations, the registry blocks the transaction.
 * **Roda's Solution:** We implemented a dual-wallet security design. The primary owner wallet (`AI_AGENT_WALLET_ID`) handles liquidity management and transaction execution, while a separate validator wallet (`AI_AGENT_VALIDATOR_WALLET_ID`) submits feedback logs to the `ReputationRegistry`. This ensures compliance with registry rules while keeping reporting completely decoupled.
 
-### 4. Client-Level Gas Protection
-* **The Vulnerability:** Under EVM logic, executing a contract call (like `closeRound()`) against an uninitialized or empty contract succeeds at the EVM layer but performs no state change, wasting transaction gas.
-* **Roda's Solution:** Roda checks the caller's membership status and contract initialization status before allowing any interactive buttons to be clicked. Non-members and non-creators are blocked from executing administrative operations, preventing unnecessary gas loss.
-
 ---
 
 ## Roadmap & Arc Integrations (v2)
 
-To scale Roda into the ultimate stablecoin consumer-finance protocol on Arc, we plan to implement:
-
 ### 1. Circle CCTP Onboarding ("Bridge & Join")
-Integrate Circle's Cross-Chain Transfer Protocol (CCTP) directly into the Roda onboarding wizard. This will allow users to join a Roda circle using USDC from external networks (e.g. Arbitrum, Base, Optimism, or Solana) and settle natively on Arc without manual bridging.
+Integrate Circle's Cross-Chain Transfer Protocol (CCTP) directly into the Roda onboarding wizard to allow users to join a Roda circle using USDC from external networks (e.g. Arbitrum, Base, Optimism, or Solana) and settle natively on Arc.
 
 ### 2. Opt-in Selectively Shielded Privacy
-Implement selectively shielded privacy utilizing Arc's privacy-preserving layer. This keeps the existence of the circle and a member's payment reputation public, while completely shielding sensitive details like payment amounts, group member addresses, and payout schedules.
+Implement selectively shielded privacy utilizing Arc's privacy-preserving layer, keeping payment reputation public while shielding sensitive details like payment amounts and group member addresses.
 
 ### 3. Attested Roda Passport Credentials
-Convert Roda Passport reputation profiles into non-transferable EAS (Ethereum Attestation Service) badges or Soulbound Tokens (SBTs). These portable repayment scores can be queried by other Arc ecosystem protocols, enabling undercollateralized lending and credit services.
+Convert Roda Passport reputation profiles into non-transferable EAS (Ethereum Attestation Service) badges or Soulbound Tokens (SBTs) to enable undercollateralized lending across the Arc ecosystem.

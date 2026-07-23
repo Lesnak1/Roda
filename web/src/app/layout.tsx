@@ -89,6 +89,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           </div>
           {/* Outermost ring — hero halo */}
           <div className="roda-ring ring-5"></div>
+          {/* Interlocking Liquidity Ring — center-right */}
+          <div className="roda-ring ring-6">
+            <div className="orbital-dot dot-6a"></div>
+          </div>
         </div>
         <Providers>{children}</Providers>
       </body>
