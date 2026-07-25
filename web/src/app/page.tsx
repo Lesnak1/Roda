@@ -8,7 +8,6 @@ import { CreateCircle } from "@/components/CreateCircle";
 import { CircleList } from "@/components/CircleList";
 import { CircleDetail } from "@/components/CircleDetail";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { ActivityTicker } from "@/components/ActivityTicker";
 import { RoscaCalculator } from "@/components/RoscaCalculator";
 import { FACTORY_ADDRESS } from "@/lib/contracts";
 
@@ -70,7 +69,6 @@ export default function Home() {
           </div>
         </div>
       </header>
-      <ActivityTicker />
 
       <main className="main">
         <div className="container">
