@@ -222,17 +222,28 @@ export default function DocsPage() {
                     To ensure trustless execution, the AI Guardian is registered as an on-chain identity using the <strong>ERC-8004 standard</strong>:
                   </p>
                   <ul>
-                    <li>The agent is minted as an identity NFT on Arc's <code>IdentityRegistry</code>.</li>
+                    <li>The agent is minted as an identity NFT on Arc's <code>IdentityRegistry</code> (Agent ID: <code>#849938</code>).</li>
                     <li>Following each credit assessment, a validator wallet submits a <code>giveFeedback</code> rating to the on-chain <code>ReputationRegistry</code>.</li>
                     <li>The overall reputation score and historical assessments are calculated directly from on-chain logs.</li>
                   </ul>
 
-                  <h3 style={{ fontSize: "17px", fontWeight: "700", marginTop: "14px" }}>How to Test the Guardian:</h3>
+                  <h3 style={{ fontSize: "17px", fontWeight: "700", marginTop: "14px" }}>3. Monetized x402 Nanopayments API</h3>
+                  <p>
+                    External agents and dApps can purchase real-time AI risk assessment reports via the <strong>x402 HTTP 402 Payment Required</strong> protocol at <code>/api/risk-report</code>:
+                  </p>
+                  <ul>
+                    <li><strong>Price per query:</strong> $0.001 USDC (nanopayment scale).</li>
+                    <li><strong>Monetization Flow:</strong> Micro-payment signatures settle gas-free to the Guardian&apos;s Circle Developer Wallet.</li>
+                    <li><strong>Live Chain Reads:</strong> Pulls real collateral, debt, and payment history from Arc Testnet smart contracts before generating DeepSeek AI analysis.</li>
+                  </ul>
+
+                  <h3 style={{ fontSize: "17px", fontWeight: "700", marginTop: "14px" }}>How to Test the Guardian & Terminal:</h3>
                   <ol>
                     <li>Enter any active circle dashboard and locate the <strong>AI Liquidity Guardian</strong> panel.</li>
-                    <li>Verify the agent's on-chain status under the <strong>Onchain Identity Verified</strong> widget.</li>
+                    <li>Verify the agent&apos;s on-chain status under the <strong>Onchain Identity Verified</strong> widget.</li>
                     <li>Select a member from the dropdown list and click <strong>Analyze Risk</strong> to fetch a real-time risk profile and AI rationale.</li>
-                    <li>If approved, click <strong>Execute Automated Injection</strong> to trigger the live Circle-powered transaction.</li>
+                    <li>Click <strong>▶ Run AI Security Audit</strong> inside the <strong>AI Guardian Terminal</strong> to stream real-time timestamped logs of on-chain verification, DeepSeek AI reasoning, and ERC-8004 reputation logs.</li>
+                    <li>Call <code>GET /api/risk-report?circle=0x...&member=0x...</code> to test the <strong>x402 Nanopayment API</strong> challenge response.</li>
                   </ol>
                 </motion.section>
 

@@ -17,6 +17,7 @@ import { explorerAddress } from "@/lib/chains/arcTestnet";
 import { TxStatus } from "./TxStatus";
 import { ReputationPanel } from "./ReputationPanel";
 import { AIGuardianPanel } from "./AIGuardianPanel";
+import { AIGuardianTerminal } from "./AIGuardianTerminal";
 import { IntegrationsPanel } from "./IntegrationsPanel";
 import { CircleInviteModal } from "./CircleInviteModal";
 import { isL2Address, getL2Circles, getL2CircleMembers } from "@/lib/l2Network";
@@ -629,6 +630,15 @@ export function CircleDetail({
       <motion.div variants={itemVariants}>
         <AIGuardianPanel address={address} members={members} currentRound={currentRound} state={state} />
       </motion.div>
+
+      {account && members.length > 0 && (
+        <motion.div variants={itemVariants}>
+          <AIGuardianTerminal
+            circleAddress={address}
+            memberAddress={members[0] as `0x${string}`}
+          />
+        </motion.div>
+      )}
 
       <motion.div variants={itemVariants}>
         <IntegrationsPanel circleAddress={address} />

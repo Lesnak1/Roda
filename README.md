@@ -30,6 +30,8 @@ Traditional real-world ROSCAs (known as *tanda*, *susu*, *stokvel*, *gün*, or *
 6. **🌌 Quantum Liquidity Orbital Background:** 3D perspective GPU-accelerated background frame animations (`perspective: 1200px`) featuring rotating yörünge rings and pulsing participant nodes.
 7. **🤖 Autonomous AI Liquidity Guardian:** Features an AI risk agent that monitors circle defaults and executes automated on-chain bailout transactions using Circle's Developer-Controlled Wallets API.
 8. **🔒 Trustless Escrow & Dynamic Withholding:** Contributions are locked in smart contract escrow, and lifetime default deficits are automatically refilled during `closeRound()` settlement.
+9. **⚡ Monetized x402 Nanopayments API:** Agent service endpoint (`/api/risk-report`) selling real-time AI credit risk analysis at **$0.001 per query** using the x402 Payment Required protocol (aligned with Lepton RFB 02).
+10. **🖥️ Live AI Guardian Terminal:** Interactive terminal UI streaming real-time timestamped logs of on-chain verification, DeepSeek AI reasoning, and ERC-8004 reputation logging.
 
 ---
 

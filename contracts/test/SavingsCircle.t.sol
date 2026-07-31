@@ -345,6 +345,7 @@ contract SavingsCircleTest is Test {
         
         // Close round 0: Carol's default is covered by her collateral.
         // Carol's collateral becomes 0.
+        vm.warp(block.timestamp + DURATION + 1);
         c.closeRound();
         assertEq(c.collateral(carol), 0);
         
@@ -373,15 +374,17 @@ contract SavingsCircleTest is Test {
         
         // Close round 2: Carol's debt of 100 USDC is deducted from Carol's Round 2 gross pot (200 USDC)
         // 100 USDC is refunded to Round 1 claimablePayout.
+        vm.warp(block.timestamp + DURATION + 1);
         c.closeRound();
         
         assertEq(c.claimablePayout(2), CONTRIBUTION); // Carol's gross was 200, minus 100 debt = 100 net payout
         assertEq(c.claimablePayout(1), CONTRIBUTION * 3); // Round 1 was 200, plus 100 recovered = 300 total
         
         // Bob can claim the remaining 100 USDC refund!
+        uint256 beforeBobClaim2 = usdc.balanceOf(bob);
         vm.prank(bob);
         c.claimPayout(1);
-        assertEq(usdc.balanceOf(bob) - beforeBob, CONTRIBUTION * 3);
+        assertEq(usdc.balanceOf(bob) - beforeBobClaim2, CONTRIBUTION);
         
         // Carol gets her net payout (100 USDC)
         uint256 beforeCarol = usdc.balanceOf(carol);
