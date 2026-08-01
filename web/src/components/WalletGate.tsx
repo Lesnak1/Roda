@@ -18,9 +18,66 @@ export function WalletGate({ children }: { children: ReactNode }) {
   const { address, isConnected, chainId } = useAccount();
   const { connect, connectors, isPending } = useConnect();
   const { disconnect } = useDisconnect();
-  const { switchChain } = useSwitchChain();
+  const { switchChainAsync } = useSwitchChain();
+  const [switching, setSwitching] = useState(false);
+  const [switchError, setSwitchError] = useState<string | null>(null);
 
   const onArc = chainId === arcTestnet.id;
+
+  const handleSwitchNetwork = async () => {
+    setSwitching(true);
+    setSwitchError(null);
+    try {
+      if (switchChainAsync) {
+        await switchChainAsync({ chainId: arcTestnet.id });
+      }
+    } catch (err: any) {
+      console.warn("Wagmi switchChain failed, attempting direct window.ethereum fallback:", err);
+      if (typeof window !== "undefined" && (window as any).ethereum) {
+        const ethereum = (window as any).ethereum;
+        try {
+          await ethereum.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: "0x4cf22a" }], // 5042002 in hex
+          });
+        } catch (switchErr: any) {
+          if (switchErr?.code === 4902 || switchErr?.message?.includes("Unrecognized chain")) {
+            try {
+              await ethereum.request({
+                method: "wallet_addEthereumChain",
+                params: [
+                  {
+                    chainId: "0x4cf22a",
+                    chainName: "Arc Testnet",
+                    nativeCurrency: {
+                      name: "USDC",
+                      symbol: "USDC",
+                      decimals: 18,
+                    },
+                    rpcUrls: [
+                      process.env.NEXT_PUBLIC_ARC_RPC_URL || "https://arc-testnet.g.alchemy.com/v2/QNS2Qy6uBju_7o-Q1u2zsuXnrq3dmEt_",
+                      "https://rpc.testnet.arc.network",
+                    ],
+                    blockExplorerUrls: ["https://testnet.arcscan.app"],
+                  },
+                ],
+              });
+            } catch (addErr: any) {
+              console.error("Failed to add Arc Testnet to wallet:", addErr);
+              setSwitchError("Failed to add Arc Testnet to wallet. Please add Chain ID 5042002 manually in MetaMask.");
+            }
+          } else {
+            console.error("Failed to switch network:", switchErr);
+            setSwitchError(switchErr?.message || "Network switch rejected by wallet.");
+          }
+        }
+      } else {
+        setSwitchError("No Web3 provider found in browser.");
+      }
+    } finally {
+      setSwitching(false);
+    }
+  };
 
   const { data: gasBal } = useBalance({
     address,
@@ -63,6 +120,23 @@ export function WalletGate({ children }: { children: ReactNode }) {
     );
   }
 
+  // If connected but chainId hasn't resolved yet
+  if (chainId === undefined) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.96 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="card center-card"
+      >
+        <div className="center-ico">
+          <Globe size={28} className="grad-text" />
+        </div>
+        <h3 className="card-title">Detecting Network...</h3>
+        <p className="card-desc">Verifying network connection to Arc Testnet.</p>
+      </motion.div>
+    );
+  }
+
   if (!onArc) {
     return (
       <motion.div
@@ -75,12 +149,24 @@ export function WalletGate({ children }: { children: ReactNode }) {
         </div>
         <h3 className="card-title">Wrong Network</h3>
         <p className="card-desc">Roda runs only on Arc Testnet (Chain ID {arcTestnet.id}).</p>
-        <button className="btn" onClick={() => switchChain({ chainId: arcTestnet.id })}>
-          Switch to Arc Testnet
+        <button
+          className="btn"
+          disabled={switching}
+          onClick={handleSwitchNetwork}
+          style={{ display: "inline-flex", alignItems: "center", gap: 8, margin: "0 auto" }}
+        >
+          {switching && <span className="btn-spin" />}
+          {switching ? "Switching Network..." : "Switch to Arc Testnet"}
         </button>
+        {switchError && (
+          <p style={{ color: "#ef4444", fontSize: "0.8rem", marginTop: "12px" }}>
+            {switchError}
+          </p>
+        )}
       </motion.div>
     );
   }
+
 
   const gasLow = gasBal ? gasBal.value === 0n : false;
   const usdcZero = usdcBal !== undefined ? (usdcBal as bigint) === 0n : false;
