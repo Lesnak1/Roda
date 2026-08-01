@@ -213,7 +213,7 @@ export default function DocsPage() {
                     The <strong>AI Liquidity Guardian</strong> acts as an on-chain automated risk engine. When a member is in danger of defaulting, the Guardian can autonomously decide to perform a liquidity bailout:
                   </p>
                   <ul>
-                    <li>The Guardian assesses the member's collateral, debt, and payment history using DeepSeek AI.</li>
+                    <li>The Guardian assesses the member's collateral, debt, and payment history using an Autonomous AI Risk Engine.</li>
                     <li>If approved, the Guardian's <strong>Circle Developer-Controlled Wallet</strong> automatically signs and broadcasts transactions to execute the bailout on Arc Testnet, keeping the savings circle liquid.</li>
                   </ul>
 
@@ -234,7 +234,7 @@ export default function DocsPage() {
                   <ul>
                     <li><strong>Price per query:</strong> $0.001 USDC (nanopayment scale).</li>
                     <li><strong>Monetization Flow:</strong> Micro-payment signatures settle gas-free to the Guardian&apos;s Circle Developer Wallet.</li>
-                    <li><strong>Live Chain Reads:</strong> Pulls real collateral, debt, and payment history from Arc Testnet smart contracts before generating DeepSeek AI analysis.</li>
+                    <li><strong>Live Chain Reads:</strong> Pulls real collateral, debt, and payment history from Arc Testnet smart contracts before generating AI risk analysis.</li>
                   </ul>
 
                   <h3 style={{ fontSize: "17px", fontWeight: "700", marginTop: "14px" }}>How to Test the Guardian & Terminal:</h3>
@@ -242,7 +242,7 @@ export default function DocsPage() {
                     <li>Enter any active circle dashboard and locate the <strong>AI Liquidity Guardian</strong> panel.</li>
                     <li>Verify the agent&apos;s on-chain status under the <strong>Onchain Identity Verified</strong> widget.</li>
                     <li>Select a member from the dropdown list and click <strong>Analyze Risk</strong> to fetch a real-time risk profile and AI rationale.</li>
-                    <li>Click <strong>▶ Run AI Security Audit</strong> inside the <strong>AI Guardian Terminal</strong> to stream real-time timestamped logs of on-chain verification, DeepSeek AI reasoning, and ERC-8004 reputation logs.</li>
+                    <li>Click <strong>▶ Run AI Security Audit</strong> inside the <strong>AI Guardian Terminal</strong> to stream real-time timestamped logs of on-chain verification, AI risk reasoning, and ERC-8004 reputation logs.</li>
                     <li>Call <code>GET /api/risk-report?circle=0x...&member=0x...</code> to test the <strong>x402 Nanopayment API</strong> challenge response.</li>
                   </ol>
                 </motion.section>

@@ -31,7 +31,7 @@ Traditional real-world ROSCAs (known as *tanda*, *susu*, *stokvel*, *gün*, or *
 7. **🤖 Autonomous AI Liquidity Guardian:** Features an AI risk agent that monitors circle defaults and executes automated on-chain bailout transactions using Circle's Developer-Controlled Wallets API.
 8. **🔒 Trustless Escrow & Dynamic Withholding:** Contributions are locked in smart contract escrow, and lifetime default deficits are automatically refilled during `closeRound()` settlement.
 9. **⚡ Monetized x402 Nanopayments API:** Agent service endpoint (`/api/risk-report`) selling real-time AI credit risk analysis at **$0.001 per query** using the x402 Payment Required protocol (aligned with Lepton RFB 02).
-10. **🖥️ Live AI Guardian Terminal:** Interactive terminal UI streaming real-time timestamped logs of on-chain verification, DeepSeek AI reasoning, and ERC-8004 reputation logging.
+10. **🖥️ Live AI Guardian Terminal:** Interactive terminal UI streaming real-time timestamped logs of on-chain verification, AI risk reasoning, and ERC-8004 reputation logging.
 
 ---
 
@@ -162,7 +162,7 @@ To deploy Roda to Vercel:
    - `CIRCLE_ENTITY_SECRET` (Circle entity secret hex string)
    - `AI_AGENT_WALLET_ID` (Circle Developer-Controlled Wallet ID for liquidity execution)
    - `AI_AGENT_VALIDATOR_WALLET_ID` (Circle Developer-Controlled Wallet ID for validator reputation logging)
-   - `AI_API_KEY` (DeepSeek model API key)
+   - `AI_API_KEY` (Autonomous AI model API key)
 4. **Deploy:** Hit deploy. Vercel will automatically compile, optimize, and launch your dApp!
 
 ---

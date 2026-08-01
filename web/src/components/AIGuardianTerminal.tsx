@@ -72,7 +72,7 @@ export function AIGuardianTerminal({ circleAddress, memberAddress }: AIGuardianT
       addLine("data", `Circle State: ${data.serverVerified ? "Verified Active" : "Unverified"}`);
 
       await new Promise((r) => setTimeout(r, 100));
-      addLine("info", "Submitting to DeepSeek AI risk engine (model: deepseek-v4-flash)...");
+      addLine("info", "Submitting to Autonomous AI Risk Engine (model: Roda-Guardian-v1)...");
 
       await new Promise((r) => setTimeout(r, 200));
       addLine("ai", `═══ AI RISK ASSESSMENT ═══`);
@@ -205,7 +205,7 @@ export function AIGuardianTerminal({ circleAddress, memberAddress }: AIGuardianT
         >
           {lines.length === 0 ? (
             <div style={{ color: "var(--text-secondary, #64748b)", fontStyle: "italic" }}>
-              Click &quot;Run AI Security Audit&quot; to analyze this circle member using live Arc Testnet on-chain data and DeepSeek AI.
+              Click &quot;Run AI Security Audit&quot; to analyze this circle member using live Arc Testnet on-chain data and Autonomous AI Agent.
             </div>
           ) : (
             lines.map((line, i) => (

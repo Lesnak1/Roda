@@ -92,7 +92,7 @@ export default function PrivacyPage() {
 
               <h2>3. Third-Party Integrations</h2>
               <p>
-                Our AI Guardian utilizes DeepSeek API to perform default risk calculations and the Circle Programmable Wallets SDK to broadcast default insurance bailouts. These integrations do not transmit or process personal identifying information (PII).
+                Our AI Guardian utilizes an autonomous AI risk engine to perform default risk calculations and the Circle Programmable Wallets SDK to broadcast default insurance bailouts. These integrations do not transmit or process personal identifying information (PII).
               </p>
 
               <h2>4. Cookie Policy</h2>

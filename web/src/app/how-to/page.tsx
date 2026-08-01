@@ -169,7 +169,7 @@ export default function HowToPage() {
                   <ul>
                     <li>In the active circle view, scroll down to the **AI Liquidity Guardian** widget.</li>
                     <li>Observe the agent's **Onchain Identity Verified** card, which displays its ERC-8004 Token ID and live reputation index on Arc Testnet.</li>
-                    <li>Select any circle member and click <strong>Analyze Risk</strong> to trigger a real-time risk profile evaluation using DeepSeek AI.</li>
+                    <li>Select any circle member and click <strong>Analyze Risk</strong> to trigger a real-time risk profile evaluation using the Autonomous AI Agent.</li>
                     <li>If the agent approves the member, click <strong>Execute Automated Injection</strong>. The Guardian's Developer-Controlled Wallet will autonomously approve and contribution-fund the round, preventing defaults and keeping the savings circle liquid.</li>
                   </ul>
                 </div>

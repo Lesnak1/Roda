@@ -267,7 +267,7 @@ export function AIGuardianPanel({
     addLog(`[RPC] Fetching member collateral, debt and payment logs from SavingsCircle contract on Arc L1...`);
 
     try {
-      addLog(`[AI] Dispatching risk parameters to DeepSeek credit analysis core...`);
+      addLog(`[AI] Dispatching risk parameters to AI credit risk engine...`);
       addLog(`[RPC] Server reading on-chain data for ${selectedMember.substring(0, 10)}...`);
       const response = await fetch("/api/agent", {
         method: "POST",
