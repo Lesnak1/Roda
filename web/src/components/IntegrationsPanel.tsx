@@ -71,6 +71,16 @@ export function IntegrationsPanel({
             {shortAddr(USDC_ADDRESS)} <ExternalLink size={12} />
           </a>
         </div>
+
+        <div style={{ ...itemStyle, borderColor: "rgba(56,189,248,0.3)", background: "rgba(56,189,248,0.05)" }}>
+          <div style={labelRowStyle}>
+            <span style={{ ...labelStyle, color: "#38bdf8", fontWeight: 700 }}>x402 Nanopayment API ($0.001)</span>
+            <span style={{ ...badgeStyle, background: "rgba(56,189,248,0.2)", color: "#38bdf8" }}>ACTIVE</span>
+          </div>
+          <a href={`/api/risk-report?circle=${circleAddress}&member=${circleAddress}`} target="_blank" rel="noreferrer" style={{ ...linkStyle, color: "#38bdf8" }}>
+            /api/risk-report <ExternalLink size={12} />
+          </a>
+        </div>
       </div>
     </div>
   );
