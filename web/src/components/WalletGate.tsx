@@ -38,7 +38,7 @@ export function WalletGate({ children }: { children: ReactNode }) {
         try {
           await ethereum.request({
             method: "wallet_switchEthereumChain",
-            params: [{ chainId: "0x4cf22a" }], // 5042002 in hex
+            params: [{ chainId: "0x4CEF52" }], // 5042002 in hex
           });
         } catch (switchErr: any) {
           if (switchErr?.code === 4902 || switchErr?.message?.includes("Unrecognized chain")) {
@@ -47,7 +47,7 @@ export function WalletGate({ children }: { children: ReactNode }) {
                 method: "wallet_addEthereumChain",
                 params: [
                   {
-                    chainId: "0x4cf22a",
+                    chainId: "0x4CEF52",
                     chainName: "Arc Testnet",
                     nativeCurrency: {
                       name: "USDC",
