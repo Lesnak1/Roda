@@ -96,6 +96,24 @@ export function WalletGate({ children }: { children: ReactNode }) {
 
   if (!mounted || !isConnected) {
     const injectedConnector = connectors.find((c) => c.type === "injected") ?? connectors[0];
+    const isMobile = typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const hasInjected = typeof window !== "undefined" && Boolean((window as any).ethereum);
+
+    const handleConnect = () => {
+      if (hasInjected) {
+        injectedConnector && connect({ connector: injectedConnector });
+      } else if (isMobile) {
+        // Deep link directly into MetaMask App Browser
+        const currentUrl = typeof window !== "undefined"
+          ? `${window.location.host}${window.location.pathname}${window.location.search}`
+          : "roda.vercel.app";
+        window.location.href = `https://metamask.app.link/dapp/${currentUrl}`;
+      } else {
+        // Desktop browser without extension
+        injectedConnector && connect({ connector: injectedConnector });
+      }
+    };
+
     return (
       <motion.div
         initial={{ opacity: 0, scale: 0.96 }}
@@ -106,19 +124,39 @@ export function WalletGate({ children }: { children: ReactNode }) {
           <Wallet size={28} className="grad-text" />
         </div>
         <h3 className="card-title">Connect your wallet</h3>
-        <p className="card-desc">Connect an EVM wallet (e.g. MetaMask) to use Roda.</p>
-        <button
-          className="btn"
-          disabled={!mounted || isPending}
-          onClick={() => injectedConnector && connect({ connector: injectedConnector })}
-          style={{ display: "inline-flex", alignItems: "center", gap: 8, margin: "0 auto" }}
-        >
-          {isPending && <span className="btn-spin" />}
-          {isPending ? "Connecting…" : "Connect Wallet"}
-        </button>
+        <p className="card-desc">
+          {isMobile && !hasInjected
+            ? "Tap below to open Roda directly inside the MetaMask Mobile App."
+            : "Connect an EVM wallet (e.g. MetaMask) to use Roda."}
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px", alignItems: "center", width: "100%", maxWidth: "320px", margin: "0 auto" }}>
+          <button
+            className="btn"
+            disabled={!mounted || isPending}
+            onClick={handleConnect}
+            style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%" }}
+          >
+            {isPending && <span className="btn-spin" />}
+            {isPending
+              ? "Connecting…"
+              : isMobile && !hasInjected
+              ? "🦊 Open in MetaMask App"
+              : "Connect Wallet"}
+          </button>
+          {isMobile && !hasInjected && (
+            <button
+              className="btn ghost sm"
+              onClick={() => injectedConnector && connect({ connector: injectedConnector })}
+              style={{ width: "100%", fontSize: "12.5px" }}
+            >
+              Try Injected Provider
+            </button>
+          )}
+        </div>
       </motion.div>
     );
   }
+
 
   // If connected but chainId hasn't resolved yet
   if (chainId === undefined) {
@@ -178,7 +216,7 @@ export function WalletGate({ children }: { children: ReactNode }) {
         animate={{ opacity: 1, y: 0 }}
         className="card"
       >
-        <div className="row" style={{ gap: "16px" }}>
+        <div className="row wallet-gate-row" style={{ gap: "16px" }}>
           <div className="stack">
             <span className="label">Account</span>
             <span className="mono" style={{ fontSize: "14.5px", fontWeight: 700 }}>
