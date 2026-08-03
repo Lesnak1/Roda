@@ -99,18 +99,39 @@ export function WalletGate({ children }: { children: ReactNode }) {
     const isMobile = typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     const hasInjected = typeof window !== "undefined" && Boolean((window as any).ethereum);
 
-    const handleConnect = () => {
-      if (hasInjected) {
-        injectedConnector && connect({ connector: injectedConnector });
+    const handleConnect = async (walletType?: "metamask" | "trust" | "coinbase" | "injected") => {
+      if (hasInjected || walletType === "injected") {
+        try {
+          if (typeof window !== "undefined" && (window as any).ethereum) {
+            await (window as any).ethereum.request({ method: "eth_requestAccounts" });
+          }
+          if (injectedConnector) {
+            connect({ connector: injectedConnector });
+          }
+        } catch (e: any) {
+          console.warn("Direct eth_requestAccounts failed, using wagmi connect fallback:", e);
+          if (injectedConnector) {
+            connect({ connector: injectedConnector });
+          }
+        }
       } else if (isMobile) {
-        // Deep link directly into MetaMask App Browser
-        const currentUrl = typeof window !== "undefined"
+        const rawHost = typeof window !== "undefined"
           ? `${window.location.host}${window.location.pathname}${window.location.search}`
-          : "roda.vercel.app";
-        window.location.href = `https://metamask.app.link/dapp/${currentUrl}`;
+          : "roda-showcase.vercel.app";
+        const fullUrl = `https://${rawHost}`;
+
+        if (walletType === "trust") {
+          window.location.href = `https://link.trustwallet.com/open_url?coin_id=60&url=${encodeURIComponent(fullUrl)}`;
+        } else if (walletType === "coinbase") {
+          window.location.href = `https://go.cb-w.com/dapp?cb_url=${encodeURIComponent(fullUrl)}`;
+        } else {
+          // Default MetaMask deep link
+          window.location.href = `https://metamask.app.link/dapp/${rawHost}`;
+        }
       } else {
-        // Desktop browser without extension
-        injectedConnector && connect({ connector: injectedConnector });
+        if (injectedConnector) {
+          connect({ connector: injectedConnector });
+        }
       }
     };
 
@@ -119,6 +140,7 @@ export function WalletGate({ children }: { children: ReactNode }) {
         initial={{ opacity: 0, scale: 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
         className="card center-card"
+        style={{ maxWidth: "420px", margin: "0 auto", padding: "28px 20px" }}
       >
         <div className="center-ico">
           <Wallet size={28} className="grad-text" />
@@ -126,36 +148,62 @@ export function WalletGate({ children }: { children: ReactNode }) {
         <h3 className="card-title">Connect your wallet</h3>
         <p className="card-desc">
           {isMobile && !hasInjected
-            ? "Tap below to open Roda directly inside the MetaMask Mobile App."
+            ? "Tap a wallet below to open Roda directly inside your Mobile Wallet Browser."
             : "Connect an EVM wallet (e.g. MetaMask) to use Roda."}
         </p>
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px", alignItems: "center", width: "100%", maxWidth: "320px", margin: "0 auto" }}>
-          <button
-            className="btn"
-            disabled={!mounted || isPending}
-            onClick={handleConnect}
-            style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%" }}
-          >
-            {isPending && <span className="btn-spin" />}
-            {isPending
-              ? "Connecting…"
-              : isMobile && !hasInjected
-              ? "🦊 Open in MetaMask App"
-              : "Connect Wallet"}
-          </button>
-          {isMobile && !hasInjected && (
+
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px", width: "100%" }}>
+          {isMobile && !hasInjected ? (
+            <>
+              <button
+                className="btn"
+                disabled={isPending}
+                onClick={() => handleConnect("metamask")}
+                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%" }}
+              >
+                🦊 Open in MetaMask App
+              </button>
+              <button
+                className="btn ghost"
+                disabled={isPending}
+                onClick={() => handleConnect("trust")}
+                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%" }}
+              >
+                🛡️ Open in Trust Wallet
+              </button>
+              <button
+                className="btn ghost"
+                disabled={isPending}
+                onClick={() => handleConnect("coinbase")}
+                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%" }}
+              >
+                🔵 Open in Coinbase Wallet
+              </button>
+              <button
+                className="btn ghost sm"
+                disabled={isPending}
+                onClick={() => handleConnect("injected")}
+                style={{ width: "100%", fontSize: "12px", marginTop: "4px" }}
+              >
+                Connect Injected Browser Provider
+              </button>
+            </>
+          ) : (
             <button
-              className="btn ghost sm"
-              onClick={() => injectedConnector && connect({ connector: injectedConnector })}
-              style={{ width: "100%", fontSize: "12.5px" }}
+              className="btn"
+              disabled={!mounted || isPending}
+              onClick={() => handleConnect("injected")}
+              style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%" }}
             >
-              Try Injected Provider
+              {isPending && <span className="btn-spin" />}
+              {isPending ? "Connecting…" : "Connect Wallet"}
             </button>
           )}
         </div>
       </motion.div>
     );
   }
+
 
 
   // If connected but chainId hasn't resolved yet

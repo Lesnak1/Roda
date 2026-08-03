@@ -1778,77 +1778,107 @@ a:hover {
 @media (max-width: 768px) {
   /* Container & Spacing */
   .container {
-    padding: 0 14px !important;
+    padding: 0 12px !important;
   }
   .card {
-    padding: 18px 14px !important;
+    padding: 16px 12px !important;
     border-radius: var(--r-md) !important;
-    margin-bottom: 14px !important;
+    margin-bottom: 12px !important;
   }
   .main {
-    padding-bottom: 40px !important;
+    padding-bottom: 30px !important;
   }
 
-  /* Header & Topbar */
+  /* Header & Topbar: Hide text nav-links on mobile to prevent overflow */
   .topbar-inner {
-    height: auto !important;
+    height: 56px !important;
     min-height: 56px !important;
-    padding: 8px 0 !important;
-    flex-wrap: wrap !important;
-    gap: 8px !important;
+    padding: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
   }
   .brand {
-    font-size: 17px !important;
-    gap: 8px !important;
+    font-size: 16px !important;
+    gap: 6px !important;
   }
   .brand-mark {
-    width: 26px !important;
-    height: 26px !important;
+    width: 24px !important;
+    height: 24px !important;
   }
   .brand-sub {
     display: none !important;
   }
   .topbar-right {
     gap: 6px !important;
-    flex-wrap: wrap !important;
   }
   .topbar-right .nav-link {
-    font-size: 12px !important;
-    padding: 2px 4px !important;
+    display: none !important;
   }
   .pill {
     padding: 4px 8px !important;
     font-size: 11px !important;
-    gap: 5px !important;
+    gap: 4px !important;
+  }
+  .theme-toggle-btn {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 8px !important;
   }
 
   /* Hero Section */
   .hero {
-    padding: 28px 0 16px !important;
+    padding: 24px 0 14px !important;
   }
   .hero-eyebrow {
-    font-size: 11.5px !important;
+    font-size: 11px !important;
     padding: 4px 10px !important;
-    margin-bottom: 16px !important;
+    margin-bottom: 12px !important;
   }
   .hero h1 {
-    font-size: clamp(24px, 7vw, 36px) !important;
-    line-height: 1.15 !important;
+    font-size: clamp(22px, 6.5vw, 32px) !important;
+    line-height: 1.18 !important;
+    max-width: 100% !important;
   }
   .hero p {
-    font-size: 14px !important;
-    margin-top: 12px !important;
+    font-size: 13.5px !important;
+    line-height: 1.5 !important;
+    margin-top: 10px !important;
   }
   .hero-feats {
-    gap: 8px !important;
-    margin-top: 20px !important;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 6px !important;
+    margin-top: 16px !important;
     width: 100% !important;
   }
   .feat {
     width: 100% !important;
-    justify-content: center !important;
-    padding: 9px 12px !important;
-    font-size: 13px !important;
+    justify-content: flex-start !important;
+    padding: 8px 12px !important;
+    font-size: 12.5px !important;
+    border-radius: 10px !important;
+  }
+
+  /* Segmented Controls (Discover / Create / Calculator) */
+  .segmented {
+    display: flex !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding: 4px !important;
+    gap: 4px !important;
+    margin-bottom: 16px !important;
+    border-radius: 12px !important;
+  }
+  .seg {
+    flex: 1 !important;
+    min-width: max-content !important;
+    padding: 8px 10px !important;
+    font-size: 12px !important;
+    text-align: center !important;
+    white-space: nowrap !important;
   }
 
   /* Wallet Gate Connected Account Row */
@@ -1866,45 +1896,98 @@ a:hover {
     padding: 8px 12px !important;
     border-radius: 8px !important;
   }
-
-  /* Buttons & Flex Controls */
-  .btn {
-    padding: 10px 16px !important;
-    font-size: 13.5px !important;
-    border-radius: 10px !important;
+  .wallet-gate-row .stat .v {
+    font-size: 14px !important;
+    margin-top: 0 !important;
   }
-  .btn.sm {
-    padding: 6px 12px !important;
-    font-size: 12px !important;
+
+  /* Grid Layouts & Cards */
+  .grid {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+  .circle-card-inner {
+    padding: 16px 14px !important;
+    min-height: auto !important;
+  }
+  .circle-amount {
+    font-size: 24px !important;
+  }
+
+  /* Stats Grid */
+  .stats {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 10px !important;
+  }
+  .stat {
+    padding: 10px 12px !important;
+  }
+  .stat .v {
+    font-size: 16px !important;
+    margin-top: 4px !important;
+  }
+
+  /* Section Headers */
+  .section-head {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+  .section-head h2 {
+    font-size: 18px !important;
   }
 
   /* Simulator Stats Bar */
   .sim-stats-bar {
     grid-template-columns: repeat(2, 1fr) !important;
-    padding: 12px !important;
-    gap: 10px !important;
+    padding: 10px !important;
+    gap: 8px !important;
   }
   .sim-stat-value {
-    font-size: 15px !important;
+    font-size: 14px !important;
   }
   .sim-stat-label {
-    font-size: 9.5px !important;
+    font-size: 9px !important;
+  }
+
+  /* Buttons & Flex Controls */
+  .btn {
+    padding: 10px 14px !important;
+    font-size: 13px !important;
+    border-radius: 10px !important;
+  }
+  .btn.sm {
+    padding: 6px 10px !important;
+    font-size: 11.5px !important;
   }
 
   /* Modals & Popups */
   .invite-modal-box, .modal-box {
-    width: 95vw !important;
-    max-width: 95vw !important;
-    padding: 18px 14px !important;
+    width: 94vw !important;
+    max-width: 94vw !important;
+    padding: 16px 12px !important;
   }
 
-  /* Tables & Terminal Overflow */
+  /* Tables & Overflow */
   table, .table-wrap, .circle-table-wrap {
     display: block !important;
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
   }
+
+  /* Footer */
+  .footer {
+    padding: 20px 12px !important;
+    font-size: 12px !important;
+  }
+  .footer-links {
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+  }
 }
+
 
 
 
