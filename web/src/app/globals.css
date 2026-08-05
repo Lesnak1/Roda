@@ -1975,6 +1975,26 @@ a:hover {
     -webkit-overflow-scrolling: touch !important;
   }
 
+  /* Terminal & Passport Cards on Mobile */
+  .terminal-wrap, [style*="IBM Plex Mono"] {
+    font-size: 10.5px !important;
+  }
+  .passport-card-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
+  /* Form Fields & Rows */
+  .field {
+    min-width: 100% !important;
+    width: 100% !important;
+  }
+  .input, .select {
+    padding: 10px 12px !important;
+    font-size: 14px !important;
+  }
+
   /* Footer */
   .footer {
     padding: 20px 12px !important;
@@ -1987,6 +2007,7 @@ a:hover {
     font-size: 12px !important;
   }
 }
+
 
 
 

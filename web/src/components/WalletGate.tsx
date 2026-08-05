@@ -79,6 +79,20 @@ export function WalletGate({ children }: { children: ReactNode }) {
     }
   };
 
+  // Auto-connect on mount if inside a Web3 in-app browser (MetaMask, Coinbase Wallet, Trust, etc.)
+
+  useEffect(() => {
+    if (mounted && !isConnected) {
+      const hasInjected = typeof window !== "undefined" && Boolean((window as any).ethereum);
+      if (hasInjected) {
+        const injectedConnector = connectors.find((c) => c.type === "injected") ?? connectors[0];
+        if (injectedConnector) {
+          connect({ connector: injectedConnector });
+        }
+      }
+    }
+  }, [mounted, isConnected, connectors, connect]);
+
   const { data: gasBal } = useBalance({
     address,
     chainId: arcTestnet.id,
@@ -94,10 +108,20 @@ export function WalletGate({ children }: { children: ReactNode }) {
     query: { enabled: Boolean(address) && onArc },
   });
 
+  const [copiedLink, setCopiedLink] = useState(false);
+
   if (!mounted || !isConnected) {
     const injectedConnector = connectors.find((c) => c.type === "injected") ?? connectors[0];
     const isMobile = typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     const hasInjected = typeof window !== "undefined" && Boolean((window as any).ethereum);
+
+    const copyCurrentUrl = () => {
+      if (typeof window !== "undefined" && navigator.clipboard) {
+        navigator.clipboard.writeText(window.location.href);
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2500);
+      }
+    };
 
     const handleConnect = async (walletType?: "metamask" | "trust" | "coinbase" | "injected") => {
       if (hasInjected || walletType === "injected") {
@@ -115,10 +139,10 @@ export function WalletGate({ children }: { children: ReactNode }) {
           }
         }
       } else if (isMobile) {
-        const rawHost = typeof window !== "undefined"
-          ? `${window.location.host}${window.location.pathname}${window.location.search}`
+        const cleanHost = typeof window !== "undefined"
+          ? `${window.location.host}${window.location.pathname}`
           : "roda-showcase.vercel.app";
-        const fullUrl = `https://${rawHost}`;
+        const fullUrl = `https://${cleanHost}`;
 
         if (walletType === "trust") {
           window.location.href = `https://link.trustwallet.com/open_url?coin_id=60&url=${encodeURIComponent(fullUrl)}`;
@@ -126,7 +150,7 @@ export function WalletGate({ children }: { children: ReactNode }) {
           window.location.href = `https://go.cb-w.com/dapp?cb_url=${encodeURIComponent(fullUrl)}`;
         } else {
           // Default MetaMask deep link
-          window.location.href = `https://metamask.app.link/dapp/${rawHost}`;
+          window.location.href = `https://metamask.app.link/dapp/${cleanHost}`;
         }
       } else {
         if (injectedConnector) {
@@ -148,7 +172,7 @@ export function WalletGate({ children }: { children: ReactNode }) {
         <h3 className="card-title">Connect your wallet</h3>
         <p className="card-desc">
           {isMobile && !hasInjected
-            ? "Tap a wallet below to open Roda directly inside your Mobile Wallet Browser."
+            ? "Tap a wallet below to open Roda directly inside your Mobile Wallet Browser, or copy the link."
             : "Connect an EVM wallet (e.g. MetaMask) to use Roda."}
         </p>
 
@@ -181,11 +205,10 @@ export function WalletGate({ children }: { children: ReactNode }) {
               </button>
               <button
                 className="btn ghost sm"
-                disabled={isPending}
-                onClick={() => handleConnect("injected")}
-                style={{ width: "100%", fontSize: "12px", marginTop: "4px" }}
+                onClick={copyCurrentUrl}
+                style={{ width: "100%", fontSize: "12.5px", marginTop: "4px" }}
               >
-                Connect Injected Browser Provider
+                {copiedLink ? "✓ Link Copied! Paste in MetaMask Browser" : "📋 Copy Link for MetaMask Browser"}
               </button>
             </>
           ) : (
@@ -203,6 +226,7 @@ export function WalletGate({ children }: { children: ReactNode }) {
       </motion.div>
     );
   }
+
 
 
 
