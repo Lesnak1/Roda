@@ -10,7 +10,13 @@
 
 > **Onchain Rotating Savings and Credit Association (ROSCA) powered by USDC on Arc L1.**
 
+### 📍 Deployed Contracts (Arc Testnet - Chain ID: 5042002)
+- **CircleFactory:** `0xE9213F10C1aB7bDa6787EB2C0b48a99278FF55f8` ([View on ArcScan](https://testnet.arcscan.app/address/0xE9213F10C1aB7bDa6787EB2C0b48a99278FF55f8))
+- **ERC-20 USDC:** `0x3600000000000000000000000000000000000000` (6 Decimals)
+- **ERC-8004 Agent ID:** `#849938` (`0x8004A818BFB912233c491871b3d84c89A494BD9e`)
+
 Built with passion and expertise by **[Leknax](https://github.com/Lesnak1)**.
+
 
 
 ---

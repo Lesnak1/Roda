@@ -1772,10 +1772,18 @@ a:hover {
   }
 }
 
+.mobile-only-nav {
+  display: none !important;
+}
+
 /* ============================================
    Ultra-Expert Mobile Responsiveness Rules
    ============================================ */
 @media (max-width: 768px) {
+  .mobile-only-nav {
+    display: flex !important;
+  }
+
   /* Container & Spacing */
   .container {
     padding: 0 12px !important;
