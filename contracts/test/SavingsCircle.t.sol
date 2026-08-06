@@ -392,5 +392,77 @@ contract SavingsCircleTest is Test {
         c.claimPayout(2);
         assertEq(usdc.balanceOf(carol) - beforeCarol, CONTRIBUTION);
     }
+
+    function testRecruitingTimeoutAndFullRefund() public {
+        // Test edge case: Circle fails to recruit full members before recruiting deadline
+        SavingsCircle c = SavingsCircle(factory.createCircle(CONTRIBUTION, MEMBERS, DURATION, 1 days));
+        _join(c, alice);
+        _join(c, bob);
+
+        assertEq(uint8(c.state()), uint8(SavingsCircle.State.Recruiting));
+        assertEq(usdc.balanceOf(address(c)), CONTRIBUTION * 2);
+
+        // Warp past recruiting deadline (1 day)
+        vm.warp(block.timestamp + 1 days + 1);
+
+        // Members withdraw 100% of their collateral without any loss after recruiting deadline passes
+        uint256 beforeAlice = usdc.balanceOf(alice);
+        vm.prank(alice);
+        c.leave();
+        assertEq(usdc.balanceOf(alice) - beforeAlice, CONTRIBUTION);
+
+        uint256 beforeBob = usdc.balanceOf(bob);
+        vm.prank(bob);
+        c.leave();
+        assertEq(usdc.balanceOf(bob) - beforeBob, CONTRIBUTION);
+        assertEq(usdc.balanceOf(address(c)), 0);
+    }
+
+
+    function testFrontRunningAndTimingAttackPrevention() public {
+        SavingsCircle c = _newCircle();
+        _join(c, alice);
+        _join(c, bob);
+        _join(c, carol);
+
+        // Alice & Bob contribute. Carol has NOT contributed yet.
+        _contribute(c, alice);
+        _contribute(c, bob);
+
+        // Attempting to close round early before deadline must revert
+        vm.prank(carol);
+        vm.expectRevert(SavingsCircle.RoundNotOver.selector);
+        c.closeRound();
+
+        // Non-member (attacker) cannot contribute or claim
+        address attacker = address(0xBAD);
+        usdc.mint(attacker, 1000e6);
+        vm.startPrank(attacker);
+        usdc.approve(address(c), type(uint256).max);
+        vm.expectRevert(SavingsCircle.NotMember.selector);
+        c.contribute();
+        vm.stopPrank();
+    }
+
+    function testMultiMemberSerialDefaultSolvencyInvariant() public {
+        // Invariant: Contract USDC balance >= Total Claimable Payouts + Total Active Collateral
+        SavingsCircle c = _newCircle();
+        _join(c, alice);
+        _join(c, bob);
+        _join(c, carol);
+
+        // Round 0: Bob & Carol default. Alice contributes.
+        _contribute(c, alice);
+        vm.warp(block.timestamp + DURATION + 1);
+        c.closeRound();
+
+        // Contract balance must equal or exceed claimable payouts + remaining collateral
+        uint256 contractBal = usdc.balanceOf(address(c));
+        uint256 activeCollateral = c.collateral(alice) + c.collateral(bob) + c.collateral(carol);
+        uint256 claimable = c.claimablePayout(0);
+
+        assertTrue(contractBal >= claimable + activeCollateral, "Solvency Invariant Violated");
+    }
 }
+
 

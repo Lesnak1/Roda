@@ -27,7 +27,25 @@ const factoryReadAbi = [
 // Track processed bailouts to prevent double-spend: (circleAddress-round-member) → timestamp
 const processedBailouts = new Map<string, number>();
 
+// Retry helper with exponential backoff for external API calls
+
+async function retryAsync<T>(fn: () => Promise<T>, retries = 3, delayMs = 1000): Promise<T> {
+  let lastError: any;
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      if (i < retries - 1) {
+        await new Promise((r) => setTimeout(r, delayMs * Math.pow(2, i)));
+      }
+    }
+  }
+  throw lastError;
+}
+
 export async function POST(req: Request) {
+
   try {
     const { circleAddress, memberAddress } = await req.json();
 
@@ -140,7 +158,7 @@ export async function POST(req: Request) {
       entitySecret,
     });
 
-    const balancesResponse = await client.getWalletTokenBalance({ id: walletId });
+    const balancesResponse = await retryAsync(() => client.getWalletTokenBalance({ id: walletId }));
     const tokenBalances = balancesResponse.data?.tokenBalances || [];
     const usdcToken = tokenBalances.find(
       (tb: any) =>
@@ -155,17 +173,20 @@ export async function POST(req: Request) {
     const tokenId = usdcToken.token.id;
     const decimalAmount = (Number(contributionAmount) / 1000000).toFixed(6);
 
-    const transferTx = await client.createTransaction({
-      walletId,
-      destinationAddress: memberAddress,
-      blockchain: "ARC-TESTNET" as any,
-      tokenId,
-      amount: [decimalAmount],
-      fee: {
-        type: "level",
-        config: { feeLevel: "MEDIUM" },
-      },
-    });
+    const transferTx = await retryAsync(() =>
+      client.createTransaction({
+        walletId,
+        destinationAddress: memberAddress,
+        blockchain: "ARC-TESTNET" as any,
+        tokenId,
+        amount: [decimalAmount],
+        fee: {
+          type: "level",
+          config: { feeLevel: "MEDIUM" },
+        },
+      })
+    );
+
 
     const txId = transferTx.data?.id;
     if (!txId) {
