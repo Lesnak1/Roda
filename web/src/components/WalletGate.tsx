@@ -112,7 +112,10 @@ export function WalletGate({ children }: { children: ReactNode }) {
 
   if (!mounted || !isConnected) {
     const injectedConnector = connectors.find((c) => c.type === "injected") ?? connectors[0];
-    const isMobile = typeof navigator !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const isMobile = typeof navigator !== "undefined" && (
+      /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+      (typeof window !== "undefined" && (window.innerWidth <= 768 || "ontouchstart" in window))
+    );
     const hasInjected = typeof window !== "undefined" && Boolean((window as any).ethereum);
 
     const copyCurrentUrl = () => {
@@ -124,16 +127,18 @@ export function WalletGate({ children }: { children: ReactNode }) {
     };
 
     const handleConnect = async (walletType?: "metamask" | "trust" | "coinbase" | "injected") => {
-      if (hasInjected || walletType === "injected") {
+      const ethereum = typeof window !== "undefined" ? (window as any).ethereum : undefined;
+
+      if (hasInjected || ethereum || walletType === "injected") {
         try {
-          if (typeof window !== "undefined" && (window as any).ethereum) {
-            await (window as any).ethereum.request({ method: "eth_requestAccounts" });
+          if (ethereum && ethereum.request) {
+            await ethereum.request({ method: "eth_requestAccounts" });
           }
           if (injectedConnector) {
             connect({ connector: injectedConnector });
           }
         } catch (e: any) {
-          console.warn("Direct eth_requestAccounts failed, using wagmi connect fallback:", e);
+          console.warn("Direct eth_requestAccounts failed, fallback to wagmi connect:", e);
           if (injectedConnector) {
             connect({ connector: injectedConnector });
           }
@@ -226,6 +231,7 @@ export function WalletGate({ children }: { children: ReactNode }) {
       </motion.div>
     );
   }
+
 
 
 
