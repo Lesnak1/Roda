@@ -130,8 +130,8 @@ contract SavingsCircleTest is Test {
         vm.expectRevert(SavingsCircle.RoundNotOver.selector);
         c.closeRound();
 
-        // After deadline, anyone can close; carol's collateral covers her share.
-        vm.warp(block.timestamp + DURATION + 1);
+        // After deadline + grace period, anyone can close; carol's collateral covers her share.
+        vm.warp(block.timestamp + DURATION + c.gracePeriodDuration() + 1);
         c.closeRound();
 
         assertEq(c.collateral(carol), 0); // collateral consumed
@@ -219,7 +219,7 @@ contract SavingsCircleTest is Test {
         // Bob defaults
         _contribute(c, carol);
         
-        vm.warp(block.timestamp + DURATION + 1);
+        vm.warp(block.timestamp + DURATION + c.gracePeriodDuration() + 1);
         c.closeRound(); // Bob's collateral is consumed to cover Round 1 pot, and then refilled due to close-time withholding.
         
         // Bob's collateral is refilled to 100 USDC during closeRound() to cover his remaining liability
@@ -235,7 +235,7 @@ contract SavingsCircleTest is Test {
         // Bob defaults again
         _contribute(c, carol);
         
-        vm.warp(block.timestamp + DURATION * 2 + 1);
+        vm.warp(block.timestamp + (DURATION + c.gracePeriodDuration() + 1) * 2);
         c.closeRound(); // Bob defaults again, but collateral is consumed to cover it.
 
         // The round pot is fully funded!
@@ -309,8 +309,8 @@ contract SavingsCircleTest is Test {
         _contribute(c, bob);
         _contribute(c, carol);
 
-        // Warp past deadline to close Round 1.
-        vm.warp(block.timestamp + DURATION + 1);
+        // Warp past deadline + grace period to close Round 1.
+        vm.warp(block.timestamp + DURATION + c.gracePeriodDuration() + 1);
 
         // Closing Round 1 consumes Alice's collateral since she defaulted.
         // Her collateral was 200, so it is decreased by 100 to cover her default.
@@ -345,7 +345,7 @@ contract SavingsCircleTest is Test {
         
         // Close round 0: Carol's default is covered by her collateral.
         // Carol's collateral becomes 0.
-        vm.warp(block.timestamp + DURATION + 1);
+        vm.warp(block.timestamp + DURATION + c.gracePeriodDuration() + 1);
         c.closeRound();
         assertEq(c.collateral(carol), 0);
         
@@ -355,7 +355,7 @@ contract SavingsCircleTest is Test {
         _contribute(c, bob);
         
         // Carol's collateral is 0, so she cannot cover. Deficit is recorded.
-        vm.warp(block.timestamp + DURATION + 1);
+        vm.warp(block.timestamp + DURATION + c.gracePeriodDuration() + 1);
         c.closeRound();
         
         // Carol's debt is 100 USDC, deficit in Round 1 is 100 USDC.
@@ -374,7 +374,7 @@ contract SavingsCircleTest is Test {
         
         // Close round 2: Carol's debt of 100 USDC is deducted from Carol's Round 2 gross pot (200 USDC)
         // 100 USDC is refunded to Round 1 claimablePayout.
-        vm.warp(block.timestamp + DURATION + 1);
+        vm.warp(block.timestamp + DURATION + c.gracePeriodDuration() + 1);
         c.closeRound();
         
         assertEq(c.claimablePayout(2), CONTRIBUTION); // Carol's gross was 200, minus 100 debt = 100 net payout
@@ -453,7 +453,7 @@ contract SavingsCircleTest is Test {
 
         // Round 0: Bob & Carol default. Alice contributes.
         _contribute(c, alice);
-        vm.warp(block.timestamp + DURATION + 1);
+        vm.warp(block.timestamp + DURATION + c.gracePeriodDuration() + 1);
         c.closeRound();
 
         // Contract balance must equal or exceed claimable payouts + remaining collateral
@@ -463,6 +463,88 @@ contract SavingsCircleTest is Test {
 
         assertTrue(contractBal >= claimable + activeCollateral, "Solvency Invariant Violated");
     }
+
+    function testPauseAndUnpauseCircuitBreaker() public {
+        SavingsCircle c = _newCircle();
+        
+        // Creator pauses contract
+        vm.prank(address(this));
+        c.pause();
+        assertTrue(c.paused());
+
+        // Join should revert when paused
+        vm.startPrank(alice);
+        usdc.approve(address(c), type(uint256).max);
+        vm.expectRevert(); // OpenZeppelin EnforcedPause
+        c.join();
+        vm.stopPrank();
+
+        // Creator unpauses contract
+        vm.prank(address(this));
+        c.unpause();
+        assertFalse(c.paused());
+
+        // Join should now succeed
+        _join(c, alice);
+        assertTrue(c.isMember(alice));
+    }
+
+    function testGracePeriodEnforcementBeforeDefault() public {
+        // Create circle with 1 hour (3600s) grace period
+        address addr = factory.createCircleWithGrace(CONTRIBUTION, MEMBERS, DURATION, 7 days, 3600);
+        SavingsCircle c = SavingsCircle(addr);
+
+        _join(c, alice);
+        _join(c, bob);
+        _join(c, carol);
+
+        // Alice contributes, Bob & Carol miss
+        _contribute(c, alice);
+
+        // Advance time past roundDeadline but BEFORE gracePeriod (3600s) finishes
+        vm.warp(block.timestamp + DURATION + 10);
+        assertTrue(c.isGracePeriodActive(0));
+
+        // Attempting to close round during grace period must revert with GracePeriodActive
+        vm.expectRevert(SavingsCircle.GracePeriodActive.selector);
+        c.closeRound();
+
+        // Warp past grace period (DURATION + 3600 + 1)
+        vm.warp(block.timestamp + 3600);
+        assertFalse(c.isGracePeriodActive(0));
+
+        // Now closeRound succeeds and covers default from collateral
+        c.closeRound();
+        assertTrue(c.roundClosed(0));
+    }
+
+    function testEmergencyWithdrawalWhenPaused() public {
+        SavingsCircle c = _newCircle();
+        _join(c, alice);
+
+        // Pause contract
+        vm.prank(address(this));
+        c.pause();
+
+        // Emergency withdraw 50 USDC collateral to creator
+        uint256 balBefore = usdc.balanceOf(address(this));
+        vm.prank(address(this));
+        c.emergencyWithdraw(address(usdc), address(this), 50e6);
+        uint256 balAfter = usdc.balanceOf(address(this));
+
+        assertEq(balAfter - balBefore, 50e6);
+    }
+
+    function testDecimalConversionHelpers() public {
+        SavingsCircle c = _newCircle();
+        uint256 amount6 = 100e6; // 100 USDC (6 decimals)
+        uint256 amount18 = c.to18Decimals(amount6);
+        assertEq(amount18, 100e18);
+
+        uint256 convertedBack = c.to6Decimals(amount18);
+        assertEq(convertedBack, amount6);
+    }
 }
+
 
 

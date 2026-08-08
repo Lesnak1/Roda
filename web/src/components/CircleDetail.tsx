@@ -20,6 +20,7 @@ import { AIGuardianPanel } from "./AIGuardianPanel";
 import { AIGuardianTerminal } from "./AIGuardianTerminal";
 import { IntegrationsPanel } from "./IntegrationsPanel";
 import { CircleInviteModal } from "./CircleInviteModal";
+import { CctpBridgeJoinModal } from "./CctpBridgeJoinModal";
 import { isL2Address, getL2Circles, getL2CircleMembers } from "@/lib/l2Network";
 
 const containerVariants = {
@@ -54,6 +55,7 @@ export function CircleDetail({
 }) {
   const { address: account } = useAccount();
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showCctpModal, setShowCctpModal] = useState(false);
 
   const isL2 = isL2Address(address);
 
@@ -210,7 +212,7 @@ export function CircleDetail({
       { onSuccess: onTx }
     );
   }
-  function call(functionName: "join" | "contribute" | "closeRound" | "withdrawCollateral" | "leave" | "cancelCircle") {
+  function call(functionName: "join" | "contribute" | "closeRound" | "withdrawCollateral" | "leave" | "cancelCircle" | "pause" | "unpause") {
     reset();
     writeContract({ ...baseRead, functionName }, { onSuccess: onTx });
   }
@@ -457,9 +459,18 @@ export function CircleDetail({
                         {busy && <span className="btn-spin" />}1) Approve USDC ({formatUsdc(collateral)})
                       </button>
                     ) : (
-                      <button className="btn success" disabled={busy} onClick={() => call("join")}>
-                        {busy && <span className="btn-spin" />}2) Join Circle
-                      </button>
+                      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", width: "100%" }}>
+                        <button className="btn success" disabled={busy} onClick={() => call("join")}>
+                          {busy && <span className="btn-spin" />}2) Join Circle
+                        </button>
+                        <button
+                          className="btn ghost"
+                          onClick={() => setShowCctpModal(true)}
+                          style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+                        >
+                          🌐 CCTP 1-Click Bridge & Join
+                        </button>
+                      </div>
                     )}
                   </div>
                   {isCreator && (
@@ -652,6 +663,15 @@ export function CircleDetail({
           contribution={formatUsdc(contribution)}
           memberCount={memberCount}
           onClose={() => setShowInviteModal(false)}
+        />
+      )}
+
+      {showCctpModal && (
+        <CctpBridgeJoinModal
+          address={address}
+          contribution={contribution}
+          collateral={collateral}
+          onClose={() => setShowCctpModal(false)}
         />
       )}
     </motion.div>

@@ -1,0 +1,21 @@
+{
+  "name": "Roda Protocol",
+  "short_name": "Roda",
+  "description": "Trustless rotating savings circles (ROSCA) built on Arc Network",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#06080d",
+  "theme_color": "#6366f1",
+  "icons": [
+    {
+      "src": "/logo_mark.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo_with_text.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

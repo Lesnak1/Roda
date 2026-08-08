@@ -22,11 +22,19 @@ const RECRUITING_DURATIONS = [
   { label: "7 days", value: 604800 },
 ];
 
+const GRACE_PERIODS = [
+  { label: "1 hour (demo)", value: 3600 },
+  { label: "24 hours (default)", value: 86400 },
+  { label: "3 days", value: 259200 },
+  { label: "7 days (max)", value: 604800 },
+];
+
 export function CreateCircle({ onCreated }: { onCreated: (circleAddress?: `0x${string}`) => void }) {
   const [amount, setAmount] = useState("10");
   const [members, setMembers] = useState(3);
   const [duration, setDuration] = useState(86400);
   const [recruiting, setRecruiting] = useState(604800);
+  const [gracePeriod, setGracePeriod] = useState(86400);
 
   const { writeContract, data: hash, isPending, error, reset } = useWriteContract();
   const { isLoading: isConfirming, isSuccess: isConfirmed, data: receipt } = useWaitForTransactionReceipt({ hash });
@@ -57,8 +65,8 @@ export function CreateCircle({ onCreated }: { onCreated: (circleAddress?: `0x${s
       {
         address: FACTORY_ADDRESS,
         abi: factoryAbi,
-        functionName: "createCircle",
-        args: [parseUsdc(amount), members, BigInt(duration), BigInt(recruiting)],
+        functionName: "createCircleWithGrace",
+        args: [parseUsdc(amount), members, BigInt(duration), BigInt(recruiting), BigInt(gracePeriod)],
       }
     );
   }
@@ -154,6 +162,23 @@ export function CreateCircle({ onCreated }: { onCreated: (circleAddress?: `0x${s
             {RECRUITING_DURATIONS.map((d) => (
               <option key={d.value} value={d.value}>
                 {d.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="field">
+          <label className="label" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <Calendar size={14} className="muted" />
+            Default grace period
+          </label>
+          <select
+            className="select"
+            value={gracePeriod}
+            onChange={(e) => setGracePeriod(Number(e.target.value))}
+          >
+            {GRACE_PERIODS.map((g) => (
+              <option key={g.value} value={g.value}>
+                {g.label}
               </option>
             ))}
           </select>

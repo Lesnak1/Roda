@@ -86,6 +86,9 @@ export default function Home() {
             <Link href="/docs" className="nav-link">
               Docs
             </Link>
+            <Link href="/analytics" className="nav-link">
+              Analytics
+            </Link>
             <a href="https://faucet.circle.com/" target="_blank" rel="noopener noreferrer" className="nav-link">
               Faucet
             </a>
@@ -163,6 +166,7 @@ export default function Home() {
                   <Link href="/about" className="btn ghost sm">🏛️ About Roda</Link>
                   <Link href="/how-to" className="btn ghost sm">📖 Step-by-Step Guide</Link>
                   <Link href="/docs" className="btn ghost sm">⚡ Technical Docs</Link>
+                  <Link href="/analytics" className="btn ghost sm">📊 Protocol Analytics</Link>
                   <a href="https://faucet.circle.com/" target="_blank" rel="noopener noreferrer" className="btn ghost sm">💧 Circle Faucet</a>
                 </motion.div>
 
@@ -296,6 +300,7 @@ export default function Home() {
         </div>
         <div className="footer-links">
           <Link href="/" className="footer-link">Dashboard</Link>
+          <Link href="/analytics" className="footer-link">Analytics</Link>
           <Link href="/about" className="footer-link">About</Link>
           <Link href="/how-to" className="footer-link">How to Use</Link>
           <Link href="/docs" className="footer-link">Docs</Link>

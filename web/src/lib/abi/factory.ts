@@ -13,6 +13,19 @@ export const factoryAbi = [
   },
   {
     type: "function",
+    name: "createCircleWithGrace",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "contributionAmount", type: "uint256" },
+      { name: "memberCount", type: "uint8" },
+      { name: "roundDuration", type: "uint256" },
+      { name: "recruitingDuration", type: "uint256" },
+      { name: "gracePeriod", type: "uint256" },
+    ],
+    outputs: [{ name: "circleAddr", type: "address" }],
+  },
+  {
+    type: "function",
     name: "circleCount",
     stateMutability: "view",
     inputs: [],

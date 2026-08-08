@@ -4,16 +4,21 @@ pragma solidity ^0.8.28;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 
 /// @title SavingsCircle
 /// @notice Trustless rotating savings & credit association (ROSCA / "para günü") for Arc.
 ///         Built for Arc Testnet where USDC is the native gas token. All circle
-///         contributions use ERC-20 USDC (6 decimals). No off-chain organizer is
-///         trusted: contributions are escrowed by the contract, the payout order is
-///         fixed at start, and defaults are covered by each member's collateral.
-/// @dev    Decimals: ERC-20 USDC = 6. Never assume 18 decimals here.
-contract SavingsCircle is ReentrancyGuard {
+///         contributions use ERC-20 USDC (6 decimals). Access control & circuit breaker
+///         managed via PAUSER_ROLE and GUARDIAN_ROLE.
+/// @dev    Decimals: ERC-20 USDC = 6.
+contract SavingsCircle is ReentrancyGuard, AccessControl, Pausable {
     using SafeERC20 for IERC20;
+
+    // --- Roles ---
+    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    bytes32 public constant GUARDIAN_ROLE = keccak256("GUARDIAN_ROLE");
 
     // --- Types ---
     enum State {
@@ -31,6 +36,7 @@ contract SavingsCircle is ReentrancyGuard {
     uint8 public immutable memberCount; // total seats in the circle
     uint256 public immutable roundDuration; // seconds per round
     uint256 public immutable joinDeadline; // timestamp when circle recruiting ends
+    uint256 public immutable gracePeriodDuration; // configurable grace period (default 86400s / 24h, min 1h, max 7d)
 
     // --- Mutable state ---
     State public state;
@@ -53,7 +59,7 @@ contract SavingsCircle is ReentrancyGuard {
     mapping(address => uint256) public memberDebt; // member => unpaid contribution debt (6 decimals)
     mapping(address => mapping(uint256 => uint256)) public debtByMemberAndRound; // member => round => unpaid amount
 
-    // --- Events (used for off-chain reputation & schedule indexing) ---
+    // --- Events ---
     event MemberJoined(address indexed member, uint256 index, uint256 collateral);
     event CircleStarted(uint256 startTime, uint256 firstDeadline);
     event Contributed(uint256 indexed round, address indexed member, uint256 amount);
@@ -66,6 +72,8 @@ contract SavingsCircle is ReentrancyGuard {
     event CollateralWithdrawn(address indexed member, uint256 amount);
     event DebtRecorded(address indexed member, uint256 indexed round, uint256 amount);
     event DebtRecovered(address indexed member, uint256 indexed round, uint256 amount, uint256 refundedToRound);
+    event CleanContributionRecorded(address indexed member, uint256 indexed round, uint256 timestamp);
+    event EmergencyTokensWithdrawn(address indexed token, address indexed to, uint256 amount);
 
     // --- Errors ---
     error NotRecruiting();
@@ -75,6 +83,7 @@ contract SavingsCircle is ReentrancyGuard {
     error NotMember();
     error AlreadyContributed();
     error RoundNotOver();
+    error GracePeriodActive();
     error RoundAlreadyClosed();
     error RoundNotClosed();
     error NotBeneficiary();
@@ -83,6 +92,7 @@ contract SavingsCircle is ReentrancyGuard {
     error NothingToWithdraw();
     error JoinDeadlinePassed();
     error NotCreator();
+    error InvalidGracePeriod();
 
     constructor(
         address _usdc,
@@ -90,13 +100,21 @@ contract SavingsCircle is ReentrancyGuard {
         uint256 _contributionAmount,
         uint8 _memberCount,
         uint256 _roundDuration,
-        uint256 _recruitingDuration
+        uint256 _recruitingDuration,
+        uint256 _gracePeriod
     ) {
         require(_usdc != address(0), "usdc=0");
         require(_memberCount >= 2, "memberCount<2");
         require(_contributionAmount > 0, "contribution=0");
         require(_roundDuration > 0, "duration=0");
         require(_recruitingDuration > 0, "recruiting=0");
+
+        if (_gracePeriod == 0) {
+            gracePeriodDuration = 86400; // Default 24 hours
+        } else {
+            if (_gracePeriod < 3600 || _gracePeriod > 604800) revert InvalidGracePeriod();
+            gracePeriodDuration = _gracePeriod;
+        }
 
         usdc = IERC20(_usdc);
         creator = _creator;
@@ -106,6 +124,35 @@ contract SavingsCircle is ReentrancyGuard {
         roundDuration = _roundDuration;
         state = State.Recruiting;
         joinDeadline = block.timestamp + _recruitingDuration;
+
+        // Role assignments
+        _grantRole(DEFAULT_ADMIN_ROLE, _creator);
+        _grantRole(PAUSER_ROLE, _creator);
+        _grantRole(GUARDIAN_ROLE, _creator);
+    }
+
+    // --- Decimal Conversion Utilities ---
+    function to6Decimals(uint256 amount18) public pure returns (uint256) {
+        return amount18 / 1e12;
+    }
+
+    function to18Decimals(uint256 amount6) public pure returns (uint256) {
+        return amount6 * 1e12;
+    }
+
+    // --- Emergency Controls ---
+    function pause() external onlyRole(PAUSER_ROLE) {
+        _pause();
+    }
+
+    function unpause() external onlyRole(PAUSER_ROLE) {
+        _unpause();
+    }
+
+    function emergencyWithdraw(address token, address to, uint256 amount) external onlyRole(PAUSER_ROLE) whenPaused {
+        require(to != address(0), "to=0");
+        IERC20(token).safeTransfer(to, amount);
+        emit EmergencyTokensWithdrawn(token, to, amount);
     }
 
     // --- Views ---
@@ -121,16 +168,18 @@ contract SavingsCircle is ReentrancyGuard {
         return members.length;
     }
 
-    /// @notice The member scheduled to receive the pot in a given round.
     function beneficiaryOf(uint256 round) public view returns (address) {
         if (round >= members.length) return address(0);
         return members[round];
     }
 
+    function isGracePeriodActive(uint256 round) public view returns (bool) {
+        if (state != State.Active || roundClosed[round]) return false;
+        return block.timestamp > roundDeadline && block.timestamp <= roundDeadline + gracePeriodDuration;
+    }
+
     // --- Step: join (Recruiting) ---
-    /// @notice Join the circle by locking a security deposit (collateral).
-    ///         Requires prior USDC approve() for collateralAmount.
-    function join() external nonReentrant {
+    function join() external nonReentrant whenNotPaused {
         if (state != State.Recruiting) revert NotRecruiting();
         if (block.timestamp >= joinDeadline) revert JoinDeadlinePassed();
         if (isMember[msg.sender]) revert AlreadyMember();
@@ -151,8 +200,7 @@ contract SavingsCircle is ReentrancyGuard {
     }
 
     // --- Step: leave (Recruiting) ---
-    /// @notice Leave the circle before it starts, reclaiming the locked collateral.
-    function leave() external nonReentrant {
+    function leave() external nonReentrant whenNotPaused {
         if (state != State.Recruiting) revert NotRecruiting();
         if (!isMember[msg.sender]) revert NotMember();
 
@@ -160,7 +208,6 @@ contract SavingsCircle is ReentrancyGuard {
         collateral[msg.sender] = 0;
         isMember[msg.sender] = false;
 
-        // Remove from members list by shifting to maintain order
         uint256 len = members.length;
         uint256 index = type(uint256).max;
         for (uint256 i = 0; i < len; i++) {
@@ -184,18 +231,16 @@ contract SavingsCircle is ReentrancyGuard {
     }
 
     // --- Step: cancelCircle (Recruiting) ---
-    /// @notice Cancel the circle before it starts. Creator only.
-    function cancelCircle() external nonReentrant {
+    function cancelCircle() external nonReentrant whenNotPaused {
         if (state != State.Recruiting) revert NotRecruiting();
-        if (msg.sender != creator) revert NotCreator();
+        if (!hasRole(DEFAULT_ADMIN_ROLE, msg.sender) && msg.sender != creator) revert NotCreator();
 
         state = State.Cancelled;
         emit CircleCancelled(block.timestamp);
     }
 
     // --- Step: contribute (Active) ---
-    /// @notice Pay this round's contribution. Requires prior approve() for contributionAmount.
-    function contribute() external nonReentrant {
+    function contribute() external nonReentrant whenNotPaused {
         if (state != State.Active) revert NotActive();
         if (!isMember[msg.sender]) revert NotMember();
         uint256 round = currentRound;
@@ -205,23 +250,29 @@ contract SavingsCircle is ReentrancyGuard {
         hasContributed[round][msg.sender] = true;
         roundPot[round] += contributionAmount;
         emit Contributed(round, msg.sender, contributionAmount);
+        emit CleanContributionRecorded(msg.sender, round, block.timestamp);
     }
 
     // --- Step: close round (Active) ---
-    /// @notice Settle the current round. Callable by anyone once everyone has paid
-    ///         OR the round deadline has passed. Missing contributions are covered
-    ///         from the defaulter's collateral. Advances to the next round.
-    function closeRound() external nonReentrant {
+    function closeRound() external nonReentrant whenNotPaused {
         if (state != State.Active) revert NotActive();
         uint256 round = currentRound;
         if (roundClosed[round]) revert RoundAlreadyClosed();
 
         bool everyonePaid = roundPot[round] == contributionAmount * memberCount;
-        if (!everyonePaid && block.timestamp < roundDeadline) revert RoundNotOver();
+        
+        if (!everyonePaid) {
+            if (block.timestamp < roundDeadline + gracePeriodDuration) {
+                if (block.timestamp < roundDeadline) {
+                    revert RoundNotOver();
+                } else {
+                    revert GracePeriodActive();
+                }
+            }
+        }
 
         address beneficiary = members[round];
 
-        // Cover defaults from collateral.
         if (!everyonePaid) {
             uint256 n = members.length;
             for (uint256 i = 0; i < n; i++) {
@@ -261,7 +312,7 @@ contract SavingsCircle is ReentrancyGuard {
                 if (owed > 0) {
                     uint256 pay = owed > remainingDebtToPay ? remainingDebtToPay : owed;
                     debtByMemberAndRound[beneficiary][r] -= pay;
-                    claimablePayout[r] += pay; // Refund the deficit of the prior round
+                    claimablePayout[r] += pay;
                     remainingDebtToPay -= pay;
                     emit DebtRecovered(beneficiary, r, pay, r);
                     if (remainingDebtToPay == 0) break;
@@ -270,7 +321,6 @@ contract SavingsCircle is ReentrancyGuard {
             gross -= debtToPay;
         }
 
-        // Dynamic collateral withholding to cover remaining round liabilities
         uint256 remRounds = memberCount - 1 - round;
         uint256 liability = contributionAmount * remRounds;
         uint256 currCollateral = collateral[beneficiary];
@@ -290,7 +340,6 @@ contract SavingsCircle is ReentrancyGuard {
 
         emit RoundClosed(round, beneficiary, roundPot[round]);
 
-        // Advance.
         if (round + 1 == memberCount) {
             state = State.Completed;
             emit CircleCompleted(block.timestamp);
@@ -300,9 +349,8 @@ contract SavingsCircle is ReentrancyGuard {
         }
     }
 
-    // --- Step: claim payout (pull pattern) ---
-    /// @notice The round beneficiary withdraws the settled pot (including any recovered refunds).
-    function claimPayout(uint256 round) external nonReentrant {
+    // --- Step: claim payout ---
+    function claimPayout(uint256 round) external nonReentrant whenNotPaused {
         if (!roundClosed[round]) revert RoundNotClosed();
         if (msg.sender != members[round]) revert NotBeneficiary();
 
@@ -320,9 +368,8 @@ contract SavingsCircle is ReentrancyGuard {
         emit PayoutClaimed(round, msg.sender, amount);
     }
 
-    // --- Step: withdraw collateral (Completed or Cancelled) ---
-    /// @notice After the circle completes (or is cancelled), members reclaim any remaining collateral.
-    function withdrawCollateral() external nonReentrant {
+    // --- Step: withdraw collateral ---
+    function withdrawCollateral() external nonReentrant whenNotPaused {
         if (state != State.Completed && state != State.Cancelled) revert NotCompleted();
         if (!isMember[msg.sender]) revert NotMember();
         if (collateralWithdrawn[msg.sender]) revert NothingToWithdraw();

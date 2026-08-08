@@ -36,24 +36,32 @@ contract CircleFactory {
         usdc = _usdc;
     }
 
-    /// @notice Create a new savings circle.
-    /// @param contributionAmount Per-round contribution in USDC (6 decimals).
-    /// @param memberCount Number of seats (== number of rounds).
-    /// @param roundDuration Seconds allowed per round before it can be force-closed.
-    /// @param recruitingDuration Seconds allowed for recruiting before join deadline.
+    /// @notice Create a new savings circle with default 24h grace period.
     function createCircle(
         uint256 contributionAmount,
         uint8 memberCount,
         uint256 roundDuration,
         uint256 recruitingDuration
     ) external returns (address circleAddr) {
+        return createCircleWithGrace(contributionAmount, memberCount, roundDuration, recruitingDuration, 86400);
+    }
+
+    /// @notice Create a new savings circle with explicit grace period duration (min 1h, max 7d).
+    function createCircleWithGrace(
+        uint256 contributionAmount,
+        uint8 memberCount,
+        uint256 roundDuration,
+        uint256 recruitingDuration,
+        uint256 gracePeriod
+    ) public returns (address circleAddr) {
         SavingsCircle circle = new SavingsCircle(
             usdc,
             msg.sender,
             contributionAmount,
             memberCount,
             roundDuration,
-            recruitingDuration
+            recruitingDuration,
+            gracePeriod
         );
         circleAddr = address(circle);
 
