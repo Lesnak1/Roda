@@ -104,11 +104,14 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
+  min-height: 100dvh; /* dynamic viewport height — fixes MetaMask in-app browser bottom bar */
   position: relative;
   overflow-x: hidden;
   background: transparent;
   color: inherit;
   font-family: inherit;
+  /* Prevent rubber-band bounce in wallet in-app browsers */
+  overscroll-behavior-y: none;
 }
 
 /* Ambient aurora background */
@@ -1793,8 +1796,14 @@ a:hover {
     border-radius: var(--r-md) !important;
     margin-bottom: 12px !important;
   }
+  /* Wallet connect centered card — prevent overflow in narrow in-app browsers */
+  .center-card {
+    max-width: calc(100vw - 24px) !important;
+    padding: 24px 16px !important;
+  }
   .main {
     padding-bottom: 30px !important;
+    padding-bottom: calc(30px + env(safe-area-inset-bottom, 0px)) !important;
   }
 
   /* Header & Topbar: Hide text nav-links on mobile to prevent overflow */
@@ -1868,6 +1877,11 @@ a:hover {
     padding: 8px 12px !important;
     font-size: 12.5px !important;
     border-radius: 10px !important;
+  }
+
+  /* How Roda Works stepper — force 1-column on mobile to prevent overflow */
+  [style*="minmax(220px"] {
+    grid-template-columns: 1fr !important;
   }
 
   /* Segmented Controls (Discover / Create / Calculator) */
@@ -2015,6 +2029,32 @@ a:hover {
     gap: 10px !important;
     justify-content: center !important;
     font-size: 12px !important;
+  }
+
+  /* CircleDetail: title + payout breakdown */
+  .card h2 {
+    font-size: 20px !important;
+    word-break: break-word !important;
+  }
+
+  /* Timeline items: stack on mobile */
+  .tl-item {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding: 10px 0 !important;
+  }
+  .tl-node {
+    min-width: auto !important;
+  }
+
+  /* RoscaCalculator grid — 280px minmax overflow fix */
+  [style*="minmax(280px"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Roda rings — reduce GPU load on mobile in-app browsers */
+  .roda-ring-container {
+    display: none !important;
   }
 }
 

@@ -368,11 +368,13 @@ export function CircleDetail({
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
+            flexWrap: "wrap",
+            gap: 8,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <ShieldCheck size={20} style={{ color: "var(--green)" }} />
-            <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+            <ShieldCheck size={20} style={{ color: "var(--green)", flexShrink: 0 }} />
+            <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", display: "flex", alignItems: "center", gap: 6 }}>
                 100% Fully Solvent & Escrow Protected
               </div>

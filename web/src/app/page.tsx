@@ -291,16 +291,3 @@ const stepBoxStyle: CSSProperties = {
   background: "var(--panel)",
   backdropFilter: "blur(8px)",
 };
-
-const statusRowStyle: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between",
-  fontSize: "13px",
-  padding: "8px 12px",
-  borderRadius: "8px",
-  background: "var(--panel)",
-  border: "1px solid var(--border)",
-};
-
-
