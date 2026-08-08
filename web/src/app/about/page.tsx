@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, Landmark, RefreshCw, ShieldAlert, Award, Brain } from "lucide-react";
+import { ArrowLeft, Landmark, RefreshCw, ShieldAlert, ShieldCheck, Award, Brain } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const containerVariants = {
@@ -139,10 +139,20 @@ export default function AboutPage() {
               <motion.div variants={itemVariants} className="about-card">
                 <h3>
                   <Brain className="grad-text" size={24} />
-                  AI Liquidity Guardian
+                  AI Liquidity Guardian & Multi-Agent Economy
                 </h3>
                 <p>
-                  To further mitigate pool insolvency and protect member credit scores, Roda integrates the **AI Liquidity Guardian**. This agentic risk engine continuously monitors circle solvency. In the event of a member default, the AI Guardian can execute an automated liquidity injection on-chain using Circle's Developer-Controlled Wallets to cover the outstanding balance. The agent operates under a verified **ERC-8004 on-chain identity** with verifiable reputation scores, demonstrating the power of the Agentic Economy on Arc L1.
+                  To further mitigate pool insolvency, Roda integrates an otonom **Multi-Agent System** (Risk Agent, Liquidity Agent, Reputation Agent). The AI Liquidity Guardian monitors circle health and can execute automated liquidity injections using Circle&apos;s Developer-Controlled Wallets API. Operating under a verified **ERC-8004 on-chain identity** (#849938) with validator feedback, it demonstrates the power of the Agentic Economy on Arc L1.
+                </p>
+              </motion.div>
+
+              <motion.div variants={itemVariants} className="about-card">
+                <h3>
+                  <ShieldCheck className="grad-text" size={24} />
+                  Production-Grade Security & CCTP
+                </h3>
+                <p>
+                  Built with OpenZeppelin `AccessControl` and `Pausable` circuit breakers, Roda allows Timelock and Multi-sig control over protocol emergencies with dedicated `emergencyWithdraw()` capabilities. Every circle includes a configurable **Default Grace Period** (24 hours default, 1h-7d bounds) to protect members against transient RPC delays, alongside **CCTP 1-Click Bridge** for deposits from Base, Arbitrum, and Ethereum.
                 </p>
               </motion.div>
             </div>

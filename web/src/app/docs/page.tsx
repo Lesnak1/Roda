@@ -193,17 +193,35 @@ export default function DocsPage() {
                   variants={itemVariants}
                   className="docs-section"
                 >
-                  <h2>State Machine & Lifecycle</h2>
+                  <h2>State Machine, Security & Grace Period</h2>
                   <p>
-                    Each <code>SavingsCircle</code> operates as a rigid, trustless state machine to protect funds from defaults:
+                    Each <code>SavingsCircle</code> operates as a rigid, production-grade state machine with OpenZeppelin AccessControl and emergency circuit breakers:
                   </p>
                   <div className="docs-code-block">
                     {`Recruiting --[memberCount joins, locks collateral]--> Active\n`}
                     {`Active: per round --[contribute -> closeRound -> claim]--> Completed\n`}
-                    {`Completed --[everyone withdraws collateral]--> Terminated`}
+                    {`Completed --[everyone withdraws collateral]--> Terminated\n`}
+                    {`Emergency: [PAUSER_ROLE -> pause() -> emergencyWithdraw()]`}
                   </div>
+                  
+                  <h3 style={{ fontSize: "17px", fontWeight: "700", marginTop: "14px" }}>1. OpenZeppelin AccessControl & Pausable Circuit Breakers</h3>
                   <p>
-                    <strong>Collateral Protection:</strong> When joining a circle, members must escrow an amount exactly equal to one round's contribution. If a member fails to contribute by the round's deadline, <code>closeRound()</code> automatically recovers their missing payment by burning a portion of their locked collateral. This guarantees the beneficiary always receives the full payout.
+                    Smart contracts implement role-based access control (<code>PAUSER_ROLE</code>, <code>GUARDIAN_ROLE</code>, <code>DEFAULT_ADMIN_ROLE</code>). In emergency situations or flagged security anomalies, authorized Multi-sig or Timelock addresses can trigger <code>pause()</code> to freeze round state transactions. While paused, emergency collateral recoveries can be executed via <code>emergencyWithdraw()</code>.
+                  </p>
+
+                  <h3 style={{ fontSize: "17px", fontWeight: "700", marginTop: "14px" }}>2. Configurable Default Grace Period (24h Default)</h3>
+                  <p>
+                    To prevent premature collateral forfeiture caused by transient network delays or wallet RPC issues, Roda enforces a configurable <strong>Default Grace Period</strong> (default: 24 hours / 86,400 seconds; minimum: 1 hour, maximum: 7 days). If a round deadline passes, callers attempting to force-close the round before the grace period expires receive an explicit on-chain <code>GracePeriodActive()</code> revert.
+                  </p>
+
+                  <h3 style={{ fontSize: "17px", fontWeight: "700", marginTop: "14px" }}>3. Circle CCTP 1-Click Bridge & Join</h3>
+                  <p>
+                    Roda integrates Circle&apos;s Cross-Chain Transfer Protocol (CCTP) to enable seamless 1-click deposits. Users on Base, Arbitrum One, Ethereum Mainnet, or OP Mainnet can bridge USDC directly into Arc Testnet circle escrows without multi-step manual bridging.
+                  </p>
+
+                  <h3 style={{ fontSize: "17px", fontWeight: "700", marginTop: "14px" }}>4. Decimal Conversion Precision</h3>
+                  <p>
+                    Arc L1 utilizes native gas USDC (18 decimals) alongside ERC-20 USDC (6 decimals). All contract calculations utilize explicit <code>to6Decimals()</code> and <code>to18Decimals()</code> pure conversion helpers to guarantee zero rounding loss across token contexts.
                   </p>
                 </motion.section>
 

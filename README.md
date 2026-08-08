@@ -6,18 +6,18 @@
 ![Foundry](https://img.shields.io/badge/Built%20with-Foundry-black?style=flat-square)
 ![Next.js](https://img.shields.io/badge/Frontend-Next.js--14-black?style=flat-square)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](LICENSE)
-![Foundry Tests](https://img.shields.io/badge/Foundry%20Tests-17%2F17%20Passing-brightgreen?style=flat-square)
+![Foundry Tests](https://img.shields.io/badge/Foundry%20Tests-21%2F21%20Passing-brightgreen?style=flat-square)
 
 > **Onchain Rotating Savings and Credit Association (ROSCA) powered by USDC on Arc L1.**
 
 ### 📍 Deployed Contracts (Arc Testnet - Chain ID: 5042002)
 - **CircleFactory:** `0xE9213F10C1aB7bDa6787EB2C0b48a99278FF55f8` ([View on ArcScan](https://testnet.arcscan.app/address/0xE9213F10C1aB7bDa6787EB2C0b48a99278FF55f8))
+- **ReputationManager (ERC-8004 Validator Helper):** Deployable Helper for Dual-Wallet Validator Feedback
 - **ERC-20 USDC:** `0x3600000000000000000000000000000000000000` (6 Decimals)
 - **ERC-8004 Agent ID:** `#849938` (`0x8004A818BFB912233c491871b3d84c89A494BD9e`)
+- **ERC-8004 Reputation Registry:** `0x8004B663056A597Dffe9eCcC1965A193B7388713`
 
 Built with passion and expertise by **[Leknax](https://github.com/Lesnak1)**.
-
-
 
 ---
 
@@ -29,18 +29,20 @@ Traditional real-world ROSCAs (known as *tanda*, *susu*, *stokvel*, *gün*, or *
 
 ---
 
-## Key Features & Ultra-Premium UX
+## Key Features & Production-Grade UX
 
-1. **🧮 ROSCA Capital Efficiency Calculator:** Interactive slider simulator comparing Roda's single-contribution collateral against traditional 150% over-collateralized DeFi protocols. Proves up to **7.5x Capital Efficiency** and collateral savings in real-time.
-2. **🛡️ Circle Solvency & Health Gauge:** On-chain health badge rendering **"%100 Fully Solvent & Escrow Protected"**, verifying that every circle round is mathematically collateralized by escrow and dynamic withholding rules.
-3. **💳 Roda Credit Passport & X/Twitter Share Modal:** Apple/Revolut-styled 3D credit passport card featuring ERC-8004 Agent ID `#849938`, repayment rates, HTML5 Canvas PNG card download, and Twitter Web Intent integration with automatic Twitter Card rendering.
-4. **🔗 One-Click Circle Invite & QR Generator:** Instant shareable invite link (`?circle=0x...`) and SVG QR code generator for recruiting new circle members.
-5. **⚡ Live On-Chain Activity Ticker:** Streams real-time `CircleFactory` deployments and `REPUTATION_REGISTRY` feedback events from Arc Testnet into an auto-scrolling header ticker.
-6. **🌌 Quantum Liquidity Orbital Background:** 3D perspective GPU-accelerated background frame animations (`perspective: 1200px`) featuring rotating yörünge rings and pulsing participant nodes.
-7. **🤖 Autonomous AI Liquidity Guardian:** Features an AI risk agent that monitors circle defaults and executes automated on-chain bailout transactions using Circle's Developer-Controlled Wallets API.
-8. **🔒 Trustless Escrow & Dynamic Withholding:** Contributions are locked in smart contract escrow, and lifetime default deficits are automatically refilled during `closeRound()` settlement.
-9. **⚡ Monetized x402 Nanopayments API:** Agent service endpoint (`/api/risk-report`) selling real-time AI credit risk analysis at **$0.001 per query** using the x402 Payment Required protocol (aligned with Lepton RFB 02).
-10. **🖥️ Live AI Guardian Terminal:** Interactive terminal UI streaming real-time timestamped logs of on-chain verification, AI risk reasoning, and ERC-8004 reputation logging.
+1. **🔑 OpenZeppelin AccessControl & Pausable Circuit Breaker:** Role-based permissions (`PAUSER_ROLE`, `GUARDIAN_ROLE`, `DEFAULT_ADMIN_ROLE`) allowing Timelock/Multi-sig contracts to pause protocol operations during emergencies with dedicated `emergencyWithdraw()` capabilities.
+2. **⏳ Configurable Grace Period (24h Default):** Protects members from premature collateral forfeiture due to transient RPC/network delays. Configurable per circle (minimum 1 hour, maximum 7 days). Enforces `GracePeriodActive()` checks in `closeRound()`.
+3. **🌐 CCTP 1-Click Bridge & Join:** Integrated Circle Cross-Chain Transfer Protocol (CCTP) modal allowing users on Base, Arbitrum, Ethereum Mainnet, or OP to deposit USDC into Arc circles in a single step.
+4. **📊 Public Protocol Analytics & Solvency Dashboard (`/analytics`):** Real-time monitoring dashboard rendering total volume secured ($24,850+ USDC), 100% solvency rate, active circles count, average circle size, and autonomous multi-agent health metrics.
+5. **🛡️ Circle Solvency & Health Gauge:** On-chain health badge rendering **"%100 Fully Solvent & Escrow Protected"**, verifying that every circle round is mathematically collateralized by escrow and dynamic withholding rules.
+6. **🤖 Autonomous Multi-Agent System (Risk, Liquidity, Reputation):** Specialized AI agent architecture featuring Risk Agent (`/api/agent/risk`), Liquidity Agent (`/api/agent/liquidity`), and ERC-8004 Reputation Agent (`/api/agent/reputation`).
+7. **💳 Roda Credit Passport & X/Twitter Share Modal:** Apple/Revolut-styled 3D credit passport card featuring ERC-8004 Agent ID `#849938`, repayment rates, HTML5 Canvas PNG card download, and Twitter Web Intent integration.
+8. **🧮 ROSCA Capital Efficiency Calculator:** Interactive slider simulator proving up to **7.5x Capital Efficiency** against traditional 150% over-collateralized DeFi lending protocols.
+9. **📱 Mobile-First PWA (Progressive Web App):** Includes `manifest.json` and mobile meta tags for seamless native-like installation on iOS and Android home screens.
+10. **⚡ Live On-Chain Activity Ticker:** Streams real-time `CircleFactory` deployments and `REPUTATION_REGISTRY` feedback events from Arc Testnet into an auto-scrolling header ticker.
+11. **⚡ Monetized x402 Nanopayments API:** Agent service endpoint (`/api/risk-report`) selling real-time AI credit risk analysis at **$0.001 per query** using the x402 Payment Required protocol (aligned with Lepton RFB 02).
+12. **🖥️ Live AI Guardian Terminal:** Interactive terminal UI streaming real-time timestamped logs of on-chain verification, AI risk reasoning, and ERC-8004 reputation logging.
 
 ---
 
